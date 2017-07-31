@@ -11,7 +11,6 @@ import h5py as h5
 
 SourceMeta = namedtuple("SourceMeta", ["frames", "height", "width", "dtype"])
 
-
 class VDSGenerator(object):
 
     """A class to generate Virtual Datasets from raw HDF5 files."""
@@ -124,7 +123,7 @@ class VDSGenerator(object):
     def generate_vds(self):
         """Generate a virtual dataset."""
         if os.path.isfile(self.output_file):
-            with h5.File(self.output_file, self.READ, libver="latest") as vds:
+            with h5.File(self.output_file, self.READ, libver="latest", swmr=True) as vds:
                 node = vds.get(self.target_node)
             if node is not None:
                 raise IOError("VDS {file} already has an entry for node "
@@ -136,7 +135,7 @@ class VDSGenerator(object):
         map_list = self.create_vds_maps(self.source_metadata)
 
         self.logger.info("Creating VDS at %s", self.output_file)
-        with h5.File(self.output_file, self.mode, libver="latest") as vds:
+        with h5.File(self.output_file, self.mode, libver="latest", swmr=True) as vds:
             self.validate_node(vds)
             vds.create_virtual_dataset(VMlist=map_list,
                                        fillvalue=self.fill_value)
@@ -193,7 +192,7 @@ class VDSGenerator(object):
             dict: Number of frames, height, width and data type of datasets
 
         """
-        h5_data = h5.File(file_path, 'r')[self.source_node]
+        h5_data = h5.File(file_path, 'r',libver='latest',swmr=True)[self.source_node]
         frames, height, width = self.parse_shape(h5_data.shape)
         data_type = h5_data.dtype
 
