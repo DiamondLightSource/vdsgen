@@ -85,6 +85,8 @@ are provided for these.
              call("-m", "--module_spacing", type=int, dest="module_spacing",
                   default=subframegen_mock.module_spacing,
                   help="Spacing between two modules."),
+             call("-F", "--fill_value", type=int, dest="fill_value", default=0,
+                  help="Fill value for spacing."),
              call("--source_node", type=str, dest="source_node",
                   default=gen_mock.source_node,
                   help="Data node in source HDF5 files."),
@@ -125,14 +127,14 @@ are provided for these.
 
 class MainTest(unittest.TestCase):
 
-    @patch(VDSGenerator_patch_path)
+    @patch(SubFrameVDSGenerator_patch_path)
     @patch(app_patch_path + '.parse_args',
            return_value=MagicMock(
                path="/test/path", empty=True,
-               files=["file1.hdf5", "file2.hdf5"], output="vds",
-               shape=[3, 256, 2048], data_type="int16",
+               prefix=None, files=["file1.hdf5", "file2.hdf5"], output="vds",
+               shape=(3, 256, 2048), data_type="int16",
                source_node="data", target_node="full_frame",
-               stripe_spacing=3, module_spacing=127,
+               stripe_spacing=3, module_spacing=127, fill_value=-1,
                mode="sub-frames",
                log_level=2))
     def test_main_empty(self, parse_mock, init_mock):
@@ -151,20 +153,23 @@ class MainTest(unittest.TestCase):
             target_node=args_mock.target_node,
             stripe_spacing=args_mock.stripe_spacing,
             module_spacing=args_mock.module_spacing,
+            fill_value=-1,
             log_level=args_mock.log_level)
 
         gen_mock.generate_vds.assert_called_once_with()
 
-    @patch(VDSGenerator_patch_path)
+    @patch("os.path.isfile", return_value=True)
+    @patch(SubFrameVDSGenerator_patch_path)
     @patch(app_patch_path + '.parse_args',
            return_value=MagicMock(
-               path="/test/path", prefix="stripe_", empty=False,
-               files=["file1.hdf5", "file2.hdf5"], output="vds",
+               path="/test/path", empty=False,
+               prefix=None, files=["file1.hdf5", "file2.hdf5"], output="vds",
                frames=3, height=256, width=2048, data_type="int16",
                source_node="data", target_node="full_frame",
-               stripe_spacing=3, module_spacing=127,
+               stripe_spacing=3, module_spacing=127, fill_value=-1,
+               mode="sub-frames",
                log_level=2))
-    def test_main_not_empty(self, parse_mock, generate_mock):
+    def test_main_not_empty(self, parse_mock, generate_mock, _):
         args_mock = parse_mock.return_value
 
         app.main()
@@ -178,4 +183,5 @@ class MainTest(unittest.TestCase):
             stripe_spacing=args_mock.stripe_spacing,
             target_node=args_mock.target_node,
             module_spacing=args_mock.module_spacing,
+            fill_value=-1,
             log_level=args_mock.log_level)
