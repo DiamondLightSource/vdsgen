@@ -32,5 +32,5 @@ setup(
         'mock'
     ],
     zip_safe=False,
-    entry_points={'console_scripts': ["vds-gen = vdsgen.app:main"]}
+    entry_points={'console_scripts': ["dls-vds-gen.py = vdsgen.app:main"]}
 )
