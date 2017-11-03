@@ -78,9 +78,9 @@ class SimpleFunctionsTest(unittest.TestCase):
 
         self.assertEqual(expected_spacing, spacing)
 
-    @patch(h5py_patch_path + '.VirtualMap')
-    @patch(h5py_patch_path + '.VirtualSource')
-    @patch(h5py_patch_path + '.VirtualTarget')
+    @patch(vdsgen_patch_path + '.VirtualMap')
+    @patch(vdsgen_patch_path + '.VirtualSource')
+    @patch(vdsgen_patch_path + '.VirtualTarget')
     def test_create_vds_maps(self, target_mock, source_mock, map_mock):
         gen = SubFrameVDSGeneratorTester(
             output_file="/test/path/vds.hdf5",
