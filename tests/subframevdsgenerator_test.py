@@ -10,7 +10,7 @@ from mock import patch, call
 from vdsgen import vdsgenerator
 from vdsgen.subframevdsgenerator import SubFrameVDSGenerator
 
-vdsgen_patch_path = "vdsgen.framevdsgenerator"
+vdsgen_patch_path = "vdsgen.subframevdsgenerator"
 VDSGenerator_patch_path = vdsgen_patch_path + ".VDSGenerator"
 h5py_patch_path = "h5py"
 
