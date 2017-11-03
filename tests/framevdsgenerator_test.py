@@ -70,9 +70,9 @@ class SimpleFunctionsTest(unittest.TestCase):
         grab_mock.assert_has_calls([call("stripe_1.h5"), call("stripe_2.h5")])
 
     @patch(h5py_patch_path + '.File')
-    @patch(h5py_patch_path + '.VirtualMap')
-    @patch(h5py_patch_path + '.VirtualSource')
-    @patch(h5py_patch_path + '.VirtualTarget')
+    @patch(vdsgen_patch_path + '.VirtualMap')
+    @patch(vdsgen_patch_path + '.VirtualSource')
+    @patch(vdsgen_patch_path + '.VirtualTarget')
     def test_create_vds_maps(self, target_mock, source_mock, map_mock,
                              file_mock):
         gen = FrameVDSGeneratorTester(

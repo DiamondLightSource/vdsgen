@@ -6,6 +6,7 @@ import logging
 import h5py as h5
 
 from vdsgenerator import VDSGenerator, SourceMeta
+from group import VirtualSource, VirtualTarget, VirtualMap
 
 
 class FrameVDSGenerator(VDSGenerator):
@@ -84,16 +85,16 @@ class FrameVDSGenerator(VDSGenerator):
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", target_shape)
 
-        vds = h5.VirtualTarget(self.output_file, self.target_node,
-                               shape=target_shape)
+        vds = VirtualTarget(self.output_file, self.target_node,
+                            shape=target_shape)
 
         total_datasets = len(self.datasets)
 
         map_list = []
         for dataset_idx, dataset in enumerate(self.datasets):
             dataset_frames = h5.File(dataset)[self.source_node].shape[0]
-            source = h5.VirtualSource(dataset, self.source_node,
-                                      shape=(dataset_frames,)+source_dims)
+            source = VirtualSource(dataset, self.source_node,
+                                   shape=(dataset_frames,)+source_dims)
 
             for frame_idx in range(dataset_frames):
 
@@ -110,8 +111,8 @@ class FrameVDSGenerator(VDSGenerator):
                                       [self.FULL_SLICE, self.FULL_SLICE])
                 v_target = vds[vds_hyperslab]
 
-                v_map = h5.VirtualMap(v_source, v_target,
-                                      dtype=source_meta.dtype)
+                v_map = VirtualMap(v_source, v_target,
+                                   dtype=source_meta.dtype)
 
                 self.logger.debug("Mapping frame %s of %s to %s of %s.",
                                   frame_idx, dataset.split("/")[-1],
