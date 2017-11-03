@@ -3,7 +3,8 @@
 
 import logging
 
-from vdsgenerator import VDSGenerator, SourceMeta, h5
+from vdsgenerator import VDSGenerator, SourceMeta
+from group import VirtualSource, VirtualTarget, VirtualMap
 
 
 class SubFrameVDSGenerator(VDSGenerator):
@@ -114,14 +115,14 @@ class SubFrameVDSGenerator(VDSGenerator):
                           "  Shape: %s\n"
                           "  Spacing: %s", target_shape, spacing)
 
-        vds = h5.VirtualTarget(self.output_file, self.target_node,
-                               shape=target_shape)
+        vds = VirtualTarget(self.output_file, self.target_node,
+                            shape=target_shape)
 
         map_list = []
         current_position = 0
         for idx, dataset in enumerate(self.datasets):
-            v_source = h5.VirtualSource(dataset, self.source_node,
-                                        shape=source_shape)
+            v_source = VirtualSource(dataset, self.source_node,
+                                     shape=source_shape)
 
             start = current_position
             stop = start + source_meta.height + spacing[idx]
@@ -135,7 +136,7 @@ class SubFrameVDSGenerator(VDSGenerator):
                               [self.FULL_SLICE])
 
             v_target = vds[hyperslab]
-            v_map = h5.VirtualMap(v_source, v_target, dtype=source_meta.dtype)
+            v_map = VirtualMap(v_source, v_target, dtype=source_meta.dtype)
 
             self.logger.debug("Mapping dataset %s to %s of %s.",
                               dataset.split("/")[-1], hyperslab, self.name)
