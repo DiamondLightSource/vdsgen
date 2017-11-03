@@ -184,10 +184,7 @@ class SimpleFunctionsTest(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             gen.process_source_datasets()
 
-    @patch(h5py_patch_path + '.VirtualMap')
-    @patch(h5py_patch_path + '.VirtualSource')
-    @patch(h5py_patch_path + '.VirtualTarget')
-    def test_create_vds_maps(self, target_mock, source_mock, map_mock):
+    def test_create_vds_maps(self):
         gen = VDSGeneratorTester(output_file="/test/path/vds.hdf5",
                                  stripe_spacing=10, module_spacing=100,
                                  target_node="full_frame", source_node="data",
