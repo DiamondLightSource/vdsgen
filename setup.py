@@ -4,7 +4,7 @@ MODULE_NAME = "vdsgen"
 
 setup(
     name=MODULE_NAME,
-    version='',
+    version='0.1',
     description='',
     url='https://github.com/dls-controls/vds-gen',
     author='Gary Yendell',
@@ -21,9 +21,16 @@ setup(
     license='APACHE',
     include_package_data=True,
     test_suite='nose.collector',
+    install_requires=[
+        'h5py>=2.7.1',
+        'numpy>=1.11.1',
+        'Cython>=0.19.1',
+        'six'
+    ],
     tests_require=[
         'nose>=1.3.0',
         'mock'
     ],
     zip_safe=False,
+    entry_points={'console_scripts': ["vds-gen = vdsgen.app:main"]}
 )
