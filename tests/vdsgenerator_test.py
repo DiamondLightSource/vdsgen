@@ -105,7 +105,7 @@ class VDSGeneratorInitTest(unittest.TestCase):
         self.assertEqual("File /test/path/file1 does not exist. To create VDS "
                          "from raw files that haven't been created yet, "
                          "source must be provided.",
-                         e.exception.message)
+                         str(e.exception))
 
 
 class FindFilesTest(unittest.TestCase):
