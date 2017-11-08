@@ -1,9 +1,9 @@
 import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
-from vdsgenerator import VDSGenerator
-from framevdsgenerator import FrameVDSGenerator
-from subframevdsgenerator import SubFrameVDSGenerator
+from .vdsgenerator import VDSGenerator
+from .framevdsgenerator import FrameVDSGenerator
+from .subframevdsgenerator import SubFrameVDSGenerator
 
 help_message = """
 -------------------------------------------------------------------------------

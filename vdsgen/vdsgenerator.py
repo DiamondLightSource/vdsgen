@@ -11,7 +11,7 @@ import h5py as h5
 
 # Replace File parent Group with our VGroup subclass that has the additional
 # create_virtual_dataset method
-from group import VGroup
+from .group import VGroup
 h5.File.__bases__ = (VGroup,)
 
 SourceMeta = namedtuple("SourceMeta", ["frames", "height", "width", "dtype"])

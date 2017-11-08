@@ -3,8 +3,8 @@
 
 import logging
 
-from vdsgenerator import VDSGenerator, SourceMeta
-from group import VirtualSource, VirtualTarget, VirtualMap
+from .vdsgenerator import VDSGenerator, SourceMeta
+from .group import VirtualSource, VirtualTarget, VirtualMap
 
 
 class SubFrameVDSGenerator(VDSGenerator):
