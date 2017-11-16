@@ -5,7 +5,7 @@ import unittest
 from pkg_resources import require
 
 require("mock")
-from mock import patch, call
+from mock import MagicMock, patch, call
 
 from vdsgen import vdsgenerator
 from vdsgen.subframevdsgenerator import SubFrameVDSGenerator
@@ -28,6 +28,7 @@ class SubFrameVDSGeneratorTester(SubFrameVDSGenerator):
     def __init__(self, **kwargs):
         for attribute, value in kwargs.items():
             self.__setattr__(attribute, value)
+        self.logger = MagicMock()
 
 
 class FrameVDSGeneratorInitTest(unittest.TestCase):

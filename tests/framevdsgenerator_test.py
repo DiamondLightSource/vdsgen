@@ -28,6 +28,7 @@ class FrameVDSGeneratorTester(FrameVDSGenerator):
     def __init__(self, **kwargs):
         for attribute, value in kwargs.items():
             self.__setattr__(attribute, value)
+        self.logger = MagicMock()
 
 
 class FrameVDSGeneratorInitTest(unittest.TestCase):
