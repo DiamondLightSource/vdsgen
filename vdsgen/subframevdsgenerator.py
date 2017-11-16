@@ -1,8 +1,6 @@
 #!/bin/env dls-python
 """A class for generating virtual dataset frames from sub-frames."""
 
-import logging
-
 from .vdsgenerator import VDSGenerator, SourceMeta
 from .group import VirtualSource, VirtualTarget, VirtualMap
 
@@ -14,8 +12,6 @@ class SubFrameVDSGenerator(VDSGenerator):
     # Default Values
     stripe_spacing = 10  # Pixel spacing between stripes in a module
     module_spacing = 10  # Pixel spacing between modules
-
-    logger = logging.getLogger("SubFrameVDSGenerator")
 
     def __init__(self, path, prefix=None, files=None, output=None, source=None,
                  source_node=None, target_node=None, fill_value=None,

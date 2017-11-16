@@ -1,8 +1,6 @@
 #!/bin/env dls-python
 """A class for generating virtual dataset frames from sub-frames."""
 
-import logging
-
 import h5py as h5
 
 from .vdsgenerator import VDSGenerator, SourceMeta
@@ -12,8 +10,6 @@ from .group import VirtualSource, VirtualTarget, VirtualMap
 class FrameVDSGenerator(VDSGenerator):
 
     """A class to generate Virtual Dataset frames from sub-frames."""
-
-    logger = logging.getLogger("FrameVDSGenerator")
 
     def __init__(self, path, prefix=None, files=None, output=None, source=None,
                  source_node=None, target_node=None, fill_value=None,

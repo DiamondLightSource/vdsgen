@@ -34,8 +34,6 @@ class VDSGenerator(object):
     mode = CREATE  # Write mode for vds file
     log_level = 2
 
-    logger = logging.getLogger("VDSGenerator")
-
     def __init__(self, path, prefix=None, files=None, output=None, source=None,
                  source_node=None, target_node=None, fill_value=None,
                  log_level=None):
@@ -55,7 +53,7 @@ class VDSGenerator(object):
                 Default is info
 
         """
-        self.logger.addHandler(logging.StreamHandler())
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(self.log_level * 10)
 
         if (prefix is None and files is None) or \

@@ -1,5 +1,6 @@
 import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+import logging
 
 from .vdsgenerator import VDSGenerator
 from .framevdsgenerator import FrameVDSGenerator
@@ -102,6 +103,9 @@ def parse_args():
 
 def main():
     """Run program."""
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
     args = parse_args()
 
     if args.empty:
