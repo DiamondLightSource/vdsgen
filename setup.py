@@ -4,7 +4,7 @@ MODULE_NAME = "vdsgen"
 
 setup(
     name=MODULE_NAME,
-    version='0.2',
+    version='0.2.1',
     description='',
     url='https://github.com/dls-controls/vds-gen',
     author='Gary Yendell',
