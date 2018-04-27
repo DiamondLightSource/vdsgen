@@ -45,9 +45,9 @@ class VGroup(Group):
                                              count=count_idx,
                                              stride=virt_stride_index,
                                              block=VM.block_shape)
-                dcpl.set_virtual(virt_dspace, VM.src.path, VM.src.key,
+                dcpl.set_virtual(virt_dspace, str.encode(VM.src.path)), str.encode(VM.src.key)),
                                  VM.src_dspace)
-            dset = h5d.create(self.id, name=VM.target.key,
+            dset = h5d.create(self.id, name=str.encode(VM.target.key)),
                               tid=h5t.py_create(VM.dtype, logical=1),
                               space=virt_dspace, dcpl=dcpl)
 
