@@ -20,3 +20,11 @@ script: nosetests tests/
 
 after_success:
     - coveralls
+
+deploy:
+  provider: pypi
+  user: dls_controls
+  password:
+    secure: LWfIEnTqTy5Xmc/zuyVUGoUKetJgwbpl6E3FQVvOkA41T8ZSuoT+En2EH7BS9KCj4ooIdiwzH+seW+3M4HbHzw7ZxMoyElCtKVM/Bajge9ByF6AjyjrrB961W0hf57CPC7CVO4wIsrO0SWY62SdHLLGz9wtQ4l2fC6dwhDK6xXM23xlmx7RHSddDlWfOW0kzag5Mu13q67OZq7Ggka94e8Cjpjd6Lr3JqudJVGeW2Kig7b0slFmzjcNAPkBj9Xe3F9PlufwQaRlm+cf44/3yRfwCN+1wXW3vyRoEnLteBBnyewj4nUkTGE/RUo1pPyjyGGmnv4WCTFvt3KmnvAThOAGMIng83sIrfbgquY/DuJU3xbsoqWtgx6p35QeZ7O8HAs5N0KN0W3bg6M62wdCPsbm/8yejajiv9wqhQT2fe89UzSuwOHeIDOdgUdzQ8d9vK9xEbKAunQMDW/KopHuyN1YBFuDOwb/r1w11JdTLbxNVxs6QzZDRlQRsnAAuNg9GBu1ckN/tSn+zwYV2OZogC5ZUR5rXJ7uy5ef+NwYf4ysgyd8s2SeX6pTnoc4DHsXcfygl4aBjW9bBPR1YaMzq7EsTLPDwjpqqqSgC4g4sSFty6pHeQErxJ6SOnXxcOx8/7+D4ijlRmAu/8gS6+ToeLfn3FVutfJRkLosUw7qZxKY=
+  on:
+    tags: true
