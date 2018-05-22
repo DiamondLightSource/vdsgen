@@ -3,6 +3,7 @@
 
 from .vdsgenerator import VDSGenerator, SourceMeta
 from .group import VirtualSource, VirtualTarget, VirtualMap
+from .hyperslab import Hyperslab
 
 
 class SubFrameVDSGenerator(VDSGenerator):
@@ -124,14 +125,14 @@ class SubFrameVDSGenerator(VDSGenerator):
             stop = start + source_meta.height + spacing[idx]
             current_position = stop
 
-            # Hyperslab: Full slice for frames for each axis,
-            #            Height bounds of stripe[idx],
-            #            Full slice for width
-            hyperslab = tuple([self.FULL_SLICE] * len(source_meta.frames) +
-                              [slice(start, stop)] +
-                              [self.FULL_SLICE])
+            # Hyperslab: All frames for each axis,
+            #            Height bounds of stripe,
+            #            Entire width
+            hyperslab = Hyperslab([self.FULL_SLICE] * len(source_meta.frames),
+                                  slice(start, stop),
+                                  self.FULL_SLICE)
 
-            v_target = vds[hyperslab]
+            v_target = vds[hyperslab.tuple]
             v_map = VirtualMap(v_source, v_target, dtype=source_meta.dtype)
 
             self.logger.debug("Mapping dataset %s to %s of %s.",
