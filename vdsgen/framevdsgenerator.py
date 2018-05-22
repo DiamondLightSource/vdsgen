@@ -13,6 +13,7 @@ class FrameVDSGenerator(VDSGenerator):
 
     def __init__(self, path, prefix=None, files=None, output=None, source=None,
                  source_node=None, target_node=None, fill_value=None,
+                 block_size=1,
                  log_level=None):
         """
         Args:
@@ -26,10 +27,12 @@ class FrameVDSGenerator(VDSGenerator):
             source_node(str): Data node in source HDF5 files
             target_node(str): Data node in VDS file
             fill_value(int): Fill value for spacing
+            block_size(int): Number of contiguous frames per block
             log_level(int): Logging level (off=3, info=2, debug=1) -
                 Default is info
 
         """
+        self.block_size = block_size
         self.total_frames = 0
 
         super(FrameVDSGenerator, self).__init__(
@@ -92,27 +95,33 @@ class FrameVDSGenerator(VDSGenerator):
             source = VirtualSource(dataset, self.source_node,
                                    shape=(dataset_frames,)+source_dims)
 
-            for frame_idx in range(dataset_frames):
+            for frame_idx in range(0, dataset_frames, self.block_size):
 
-                # Hyperslab: Frame[frame_idx],
+                source_block_idx = frame_idx // self.block_size
+                target_block_idx = \
+                    dataset_idx + total_datasets * source_block_idx
+
+                # Hyperslab: Frame[block_start_idx, block_end_idx + 1],
                 #            Full slice for height and width
-                source_hyperslab = tuple([slice(frame_idx, frame_idx + 1)] +
-                                         [self.FULL_SLICE, self.FULL_SLICE])
+                source_hyperslab = tuple(
+                    [slice(frame_idx, frame_idx + self.block_size)] +
+                    [self.FULL_SLICE, self.FULL_SLICE])
                 v_source = source[source_hyperslab]
 
-                # Hyperslab: Single frame based on indexes,
+                # Hyperslab: Frame[block_start_idx, block_end_idx + 1],
                 #            Full slice for height and width
-                target_idx = dataset_idx + total_datasets * frame_idx
-                vds_hyperslab = tuple([slice(target_idx, target_idx + 1)] +
-                                      [self.FULL_SLICE, self.FULL_SLICE])
+                vds_hyperslab = tuple(
+                    [slice(self.block_size * target_block_idx,
+                           self.block_size * (target_block_idx + 1))] +
+                    [self.FULL_SLICE, self.FULL_SLICE])
                 v_target = vds[vds_hyperslab]
 
                 v_map = VirtualMap(v_source, v_target,
                                    dtype=source_meta.dtype)
 
-                self.logger.debug("Mapping frame %s of %s to %s of %s.",
-                                  frame_idx, dataset.split("/")[-1],
-                                  target_idx, self.name)
+                self.logger.debug("Mapping dataset %s %s to %s of %s.",
+                                  dataset.split("/")[-1], source_hyperslab,
+                                  vds_hyperslab, self.name)
                 map_list.append(v_map)
 
         return map_list

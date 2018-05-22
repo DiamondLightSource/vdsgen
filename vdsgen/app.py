@@ -69,6 +69,10 @@ def parse_args():
         default=SubFrameVDSGenerator.module_spacing,
         help="Spacing between two modules.")
     other_args.add_argument(
+        "-b", "--block-size", type=int, dest="block_size",
+        default=1,
+        help="Size of blocks of contiguous frames.")
+    other_args.add_argument(
         "-F", "--fill_value", type=int, dest="fill_value", default=0,
         help="Fill value for spacing.")
     other_args.add_argument(
@@ -121,6 +125,7 @@ def main():
                                 source_node=args.source_node,
                                 target_node=args.target_node,
                                 fill_value=args.fill_value,
+                                block_size=args.block_size,
                                 log_level=args.log_level)
     elif args.mode == "sub-frames":
         gen = SubFrameVDSGenerator(args.path,
