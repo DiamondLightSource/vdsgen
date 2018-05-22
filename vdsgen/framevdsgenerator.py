@@ -5,6 +5,7 @@ import h5py as h5
 
 from .vdsgenerator import VDSGenerator, SourceMeta
 from .group import VirtualSource, VirtualTarget, VirtualMap
+from .hyperslab import Hyperslab
 
 
 class FrameVDSGenerator(VDSGenerator):
@@ -103,23 +104,23 @@ class FrameVDSGenerator(VDSGenerator):
 
                 # Hyperslab: Frame[block_start_idx, block_end_idx + 1],
                 #            Full slice for height and width
-                source_hyperslab = tuple(
-                    [slice(frame_idx, frame_idx + self.block_size)] +
-                    [self.FULL_SLICE, self.FULL_SLICE])
-                v_source = source[source_hyperslab]
+                source_hyperslab = Hyperslab(
+                    slice(frame_idx, frame_idx + self.block_size),
+                    self.FULL_SLICE, self.FULL_SLICE)
+                v_source = source[source_hyperslab.tuple]
 
                 # Hyperslab: Frame[block_start_idx, block_end_idx + 1],
                 #            Full slice for height and width
-                vds_hyperslab = tuple(
-                    [slice(self.block_size * target_block_idx,
-                           self.block_size * (target_block_idx + 1))] +
-                    [self.FULL_SLICE, self.FULL_SLICE])
-                v_target = vds[vds_hyperslab]
+                vds_hyperslab = Hyperslab(
+                    slice(self.block_size * target_block_idx,
+                          self.block_size * (target_block_idx + 1)),
+                    self.FULL_SLICE, self.FULL_SLICE)
+                v_target = vds[vds_hyperslab.tuple]
 
                 v_map = VirtualMap(v_source, v_target,
                                    dtype=source_meta.dtype)
 
-                self.logger.debug("Mapping dataset %s %s to %s of %s.",
+                self.logger.debug("Mapping %s %s to %s of %s.",
                                   dataset.split("/")[-1], source_hyperslab,
                                   vds_hyperslab, self.name)
                 map_list.append(v_map)
