@@ -5,6 +5,7 @@ import logging
 from .vdsgenerator import VDSGenerator
 from .framevdsgenerator import FrameVDSGenerator
 from .subframevdsgenerator import SubFrameVDSGenerator
+from .excaliburgapfillvdsgenerator import ExcaliburGapFillVDSGenerator
 
 help_message = """
 -------------------------------------------------------------------------------
@@ -73,6 +74,9 @@ def parse_args():
         default=1,
         help="Size of blocks of contiguous frames.")
     other_args.add_argument(
+        "-M", "--modules", type=int, dest="modules", choices=[1, 3], default=1,
+        help="Number of modules in Excalibur sensor (1[M] or 3[M]).")
+    other_args.add_argument(
         "-F", "--fill_value", type=int, dest="fill_value", default=0,
         help="Fill value for spacing.")
     other_args.add_argument(
@@ -84,9 +88,12 @@ def parse_args():
         default=VDSGenerator.target_node, help="Data node in VDS file.")
     other_args.add_argument(
         "--mode", type=str, dest="mode", default="sub-frames",
-        help="Type of raw datasets"
-             "  sub-frames: ND datasets containing sub_frames of full image"
-             "  frames:     1D datasets containing interspersed frames")
+        help="Type of raw datasets\n"
+             "  sub-frames:     ND datasets containing sub-frames of full "
+             "image\n"
+             "  frames:         1D datasets containing interspersed blocks of "
+             "frames\n"
+             "  gap-fill: Single raw full-frame excalibur dataset")
     other_args.add_argument(
         "-l", "--log_level", type=int, dest="log_level",
         default=VDSGenerator.log_level,
@@ -99,7 +106,8 @@ def parse_args():
         parser.error(
             "To make an empty VDS you must explicitly define --files for the "
             "eventual raw datasets.")
-    if args.files is not None and len(args.files) < 2:
+    if args.files is not None \
+            and len(args.files) < 2 and args.mode != "gap-fill":
         parser.error("Must define at least two files to combine.")
 
     return args
@@ -138,9 +146,23 @@ def main():
                                    module_spacing=args.module_spacing,
                                    fill_value=args.fill_value,
                                    log_level=args.log_level)
+    elif args.mode == "gap-fill":
+        gen = ExcaliburGapFillVDSGenerator(
+            args.path,
+            prefix=args.prefix, files=args.files,
+            output=args.output,
+            source=source_metadata,
+            source_node=args.source_node,
+            target_node=args.target_node,
+            modules=args.modules,
+            chip_spacing=args.stripe_spacing,
+            module_spacing=args.module_spacing,
+            fill_value=args.fill_value,
+            log_level=args.log_level
+        )
     else:
-        raise NotImplementedError("Invalid VDS mode. Must be either frames or "
-                                  "sub-frames.")
+        raise NotImplementedError("Invalid VDS mode. Must be frames, "
+                                  "sub-frames, or excal-gap-fill.")
 
     gen.generate_vds()
 
