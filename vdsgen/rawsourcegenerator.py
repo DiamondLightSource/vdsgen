@@ -22,6 +22,12 @@ def parse_args():
     parser.add_argument(
         "block_size", type=int, default=1,
         help="Size of contiguous blocks of frames.")
+    parser.add_argument(
+        "x_dim", type=int, default=100,
+        help="Width of frame")
+    parser.add_argument(
+        "y_dim", type=int, default=100,
+        help="Height of frame")
 
     return parser.parse_args()
 
@@ -35,14 +41,17 @@ def main():
         values.append(list())
 
     for frame_idx in range(args.frames):
-        block_idx = (frame_idx // (args.files - 1))
-        file_idx = block_idx % args.files
+        if args.files > 1:
+            block_idx = (frame_idx // (args.files - 1))
+            file_idx = block_idx % args.files
+        else:
+            file_idx = 0
         values[file_idx].append(frame_idx + 1)
 
     for file_idx, file_values in enumerate(values):
         blocks = []
         for value in file_values:
-            blocks.append(np.full((100, 100), value))
+            blocks.append(np.full((args.y_dim, args.x_dim), value))
 
         with h5py.File(args.prefix + "_{}.h5".format(file_idx)) as f:
             f.create_dataset("data", data=np.stack(blocks))
