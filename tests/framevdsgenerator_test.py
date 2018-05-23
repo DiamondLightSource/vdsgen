@@ -81,7 +81,7 @@ class SimpleFunctionsTest(unittest.TestCase):
             stripe_spacing=10, module_spacing=100,
             target_node="full_frame", source_node="data",
             datasets=["source"] * 2, name="vds.hdf5", shape=(5, 1586, 2048),
-            total_frames=10)
+            total_frames=10, block_size=1)
         source = vdsgenerator.SourceMeta(
             frames=(5,), height=256, width=2048, dtype="uint16")
         file_mock.return_value = dict(data=MagicMock(shape=(5, 256, 2048)))
