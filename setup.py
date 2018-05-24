@@ -4,7 +4,7 @@ MODULE_NAME = "vdsgen"
 
 setup(
     name=MODULE_NAME,
-    version='0.2.3',
+    version='0.2.4',
     description='Creates virtual dataset HDF5 files',
     long_description=open("README.rst").read(),
     url='https://github.com/dls-controls/vds-gen',
@@ -23,10 +23,7 @@ setup(
     include_package_data=True,
     test_suite='nose.collector',
     install_requires=[
-        'h5py>=2.7.1',
-        'numpy>=1.11.1',
-        'Cython>=0.19.1',
-        'six'
+        'h5py==2.8.0'
     ],
     tests_require=[
         'nose>=1.3.0',
