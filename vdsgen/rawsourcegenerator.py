@@ -49,12 +49,12 @@ def main():
         values[file_idx].append(frame_idx + 1)
 
     for file_idx, file_values in enumerate(values):
-        blocks = []
-        for value in file_values:
-            blocks.append(np.full((args.y_dim, args.x_dim), value))
-
         with h5py.File(args.prefix + "_{}.h5".format(file_idx)) as f:
-            f.create_dataset("data", data=np.stack(blocks))
+            f.create_dataset("data",
+                             shape=(args.frames, args.y_dim, args.x_dim))
+            for idx, value in enumerate(file_values):
+                f["data"][idx] = np.full((args.y_dim, args.x_dim),
+                                         value, dtype="int8")
 
 
 if __name__ == "__main__":
