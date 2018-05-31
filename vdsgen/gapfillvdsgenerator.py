@@ -104,7 +104,7 @@ class GapFillVDSGenerator(VDSGenerator):
         y_current = 0
         for row in range(self.grid_y):
             y_start = y_current
-            y_stop = y_start + self.sub_width + y_spacing[row]
+            y_stop = y_start + self.sub_height + y_spacing[row]
             y_current = y_stop
 
             x_current = 0
