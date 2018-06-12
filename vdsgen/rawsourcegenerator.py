@@ -42,7 +42,7 @@ def main():
 
     for frame_idx in range(args.frames):
         if args.files > 1:
-            block_idx = (frame_idx // (args.files - 1))
+            block_idx = frame_idx // args.block_size
             file_idx = block_idx % args.files
         else:
             file_idx = 0
@@ -51,7 +51,8 @@ def main():
     for file_idx, file_values in enumerate(values):
         with h5py.File(args.prefix + "_{}.h5".format(file_idx)) as f:
             f.create_dataset("data",
-                             shape=(args.frames, args.y_dim, args.x_dim))
+                             shape=(len(values[file_idx]),
+                                    args.y_dim, args.x_dim))
             for idx, value in enumerate(file_values):
                 f["data"][idx] = np.full((args.y_dim, args.x_dim),
                                          value, dtype="int8")
