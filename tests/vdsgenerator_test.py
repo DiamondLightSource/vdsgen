@@ -57,7 +57,7 @@ class VDSGeneratorInitTest(unittest.TestCase):
         self.assertEqual(find_mock.return_value, gen.datasets)
         self.assertEqual(process_mock.return_value, gen.source_metadata)
         self.assertEqual("data", gen.source_node)
-        self.assertEqual("full_frame", gen.target_node)
+        self.assertEqual("data", gen.target_node)
         self.assertEqual(gen.CREATE, gen.mode)
 
     def test_generate_vds_given_args(self):

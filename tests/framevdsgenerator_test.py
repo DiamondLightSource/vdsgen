@@ -50,7 +50,7 @@ class SimpleFunctionsTest(unittest.TestCase):
     def test_process_source_datasets_given_valid_data(self, grab_mock):
         gen = FrameVDSGeneratorTester(datasets=["stripe_1.h5", "stripe_2.h5"])
         expected_source = vdsgenerator.SourceMeta(
-            frames=(5,), height=256, width=2048, dtype="uint16")
+            frames=10, height=256, width=2048, dtype="uint16")
 
         source = gen.process_source_datasets()
 

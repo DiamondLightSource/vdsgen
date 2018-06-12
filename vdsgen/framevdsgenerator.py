@@ -58,7 +58,7 @@ class FrameVDSGenerator(VDSGenerator):
                     raise ValueError("Files have mismatched "
                                      "{}".format(attribute))
 
-        source = SourceMeta(frames=data['frames'],
+        source = SourceMeta(frames=self.total_frames,
                             height=data['height'], width=data['width'],
                             dtype=data['dtype'])
 
@@ -102,18 +102,34 @@ class FrameVDSGenerator(VDSGenerator):
                 target_block_idx = \
                     dataset_idx + total_datasets * source_block_idx
 
+                # Make sure to only take as many frames as raw dataset has
+                # It is OK if this isn't a complete block if it is the last one
+                block_size = min(self.block_size, dataset_frames - frame_idx)
+
+                if block_size < self.block_size:
+                    self.logger.warning(
+                        "%s does not have integer number of blocks sized %s",
+                        dataset.split("/")[-1], self.block_size)
+
                 # Hyperslab: Frame[block_start_idx, block_end_idx + 1],
                 #            Full slice for height and width
                 source_hyperslab = Hyperslab(
-                    slice(frame_idx, frame_idx + self.block_size),
+                    slice(frame_idx, frame_idx + block_size),
                     self.FULL_SLICE, self.FULL_SLICE)
                 v_source = source[source_hyperslab.tuple]
+
+                block_start = self.block_size * target_block_idx
+                if block_start + block_size > self.total_frames:
+                    raise RuntimeError(
+                        "Cannot map dataset %d of %d [%d frames] "
+                        "to vds [%d frames] with blocks sized %d" %
+                        (self.datasets.index(dataset) + 1, len(self.datasets),
+                         dataset_frames, self.total_frames, self.block_size))
 
                 # Hyperslab: Frame[block_start_idx, block_end_idx + 1],
                 #            Full slice for height and width
                 vds_hyperslab = Hyperslab(
-                    slice(self.block_size * target_block_idx,
-                          self.block_size * (target_block_idx + 1)),
+                    slice(block_start, block_start + block_size),
                     self.FULL_SLICE, self.FULL_SLICE)
                 v_target = vds[vds_hyperslab.tuple]
 
