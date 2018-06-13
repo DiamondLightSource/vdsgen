@@ -8,16 +8,16 @@ require("mock")
 from mock import MagicMock, patch, call
 
 from vdsgen import vdsgenerator
-from vdsgen.framevdsgenerator import FrameVDSGenerator
+from vdsgen.interleavevdsgenerator import InterleaveVDSGenerator
 
-vdsgen_patch_path = "vdsgen.framevdsgenerator"
+vdsgen_patch_path = "vdsgen.interleavevdsgenerator"
 VDSGenerator_patch_path = vdsgen_patch_path + ".VDSGenerator"
 h5py_patch_path = "h5py"
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "h5py"))
 
 
-class FrameVDSGeneratorTester(FrameVDSGenerator):
+class InterleaveVDSGeneratorTester(InterleaveVDSGenerator):
     """A version of VDSGenerator without initialisation.
 
     For testing single methods of the class. Must have required attributes
@@ -35,7 +35,7 @@ class FrameVDSGeneratorInitTest(unittest.TestCase):
 
     @patch(VDSGenerator_patch_path + '.__init__')
     def test_super_called(self, super_mock):
-        gen = FrameVDSGenerator("/test/path", prefix="stripe_")
+        gen = InterleaveVDSGenerator("/test/path", prefix="stripe_")
 
         self.assertEqual(0, gen.total_frames)
         super_mock.assert_called_once_with("/test/path", "stripe_",
@@ -48,7 +48,7 @@ class SimpleFunctionsTest(unittest.TestCase):
            return_value=dict(frames=(5,), height=256, width=2048,
                              dtype="uint16"))
     def test_process_source_datasets_given_valid_data(self, grab_mock):
-        gen = FrameVDSGeneratorTester(datasets=["stripe_1.h5", "stripe_2.h5"])
+        gen = InterleaveVDSGeneratorTester(datasets=["stripe_1.h5", "stripe_2.h5"])
         expected_source = vdsgenerator.SourceMeta(
             frames=10, height=256, width=2048, dtype="uint16")
 
@@ -63,7 +63,7 @@ class SimpleFunctionsTest(unittest.TestCase):
                dict(frames=(3,), height=256, width=2048, dtype="uint16"),
                dict(frames=(3,), height=512, width=2048, dtype="uint16")])
     def test_process_source_datasets_given_mismatched_data(self, grab_mock):
-        gen = FrameVDSGeneratorTester(datasets=["stripe_1.h5", "stripe_2.h5"])
+        gen = InterleaveVDSGeneratorTester(datasets=["stripe_1.h5", "stripe_2.h5"])
 
         with self.assertRaises(ValueError):
             gen.process_source_datasets()
@@ -76,7 +76,7 @@ class SimpleFunctionsTest(unittest.TestCase):
     @patch(vdsgen_patch_path + '.VirtualTarget')
     def test_create_vds_maps(self, target_mock, source_mock, map_mock,
                              file_mock):
-        gen = FrameVDSGeneratorTester(
+        gen = InterleaveVDSGeneratorTester(
             output_file="/test/path/vds.hdf5",
             stripe_spacing=10, module_spacing=100,
             target_node="full_frame", source_node="data",

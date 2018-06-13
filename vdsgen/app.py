@@ -3,7 +3,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import logging
 
 from .vdsgenerator import VDSGenerator
-from .framevdsgenerator import FrameVDSGenerator
+from .interleavevdsgenerator import InterleaveVDSGenerator
 from .subframevdsgenerator import SubFrameVDSGenerator
 from .excaliburgapfillvdsgenerator import ExcaliburGapFillVDSGenerator
 
@@ -91,7 +91,7 @@ def parse_args():
         help="Type of raw datasets\n"
              "  sub-frames:     ND datasets containing sub-frames of full "
              "image\n"
-             "  frames:         1D datasets containing interspersed blocks of "
+             "  interleave:     1D datasets containing interspersed blocks of "
              "frames\n"
              "  gap-fill: Single raw full-frame excalibur dataset")
     other_args.add_argument(
@@ -124,17 +124,17 @@ def main():
         source_metadata = dict(shape=args.shape, dtype=args.data_type)
     else:
         source_metadata = None
-
-    if args.mode == "frames":
-        gen = FrameVDSGenerator(args.path,
-                                prefix=args.prefix, files=args.files,
-                                output=args.output,
-                                source=source_metadata,
-                                source_node=args.source_node,
-                                target_node=args.target_node,
-                                fill_value=args.fill_value,
-                                block_size=args.block_size,
-                                log_level=args.log_level)
+    if args.mode == "interleave":
+        gen = InterleaveVDSGenerator(
+            args.path,
+            prefix=args.prefix, files=args.files,
+            output=args.output,
+            source=source_metadata,
+            source_node=args.source_node,
+            target_node=args.target_node,
+            fill_value=args.fill_value,
+            block_size=args.block_size,
+            log_level=args.log_level)
     elif args.mode == "sub-frames":
         gen = SubFrameVDSGenerator(args.path,
                                    prefix=args.prefix, files=args.files,
@@ -162,7 +162,7 @@ def main():
         )
     else:
         raise NotImplementedError("Invalid VDS mode. Must be frames, "
-                                  "sub-frames, or excal-gap-fill.")
+                                  "interleave, sub-frames, or gap-fill.")
 
     gen.generate_vds()
 
