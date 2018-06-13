@@ -30,7 +30,7 @@ class VDSGenerator(object):
     # Default Values
     fill_value = -1  # Fill value for spacing
     source_node = "data"  # Data node in source HDF5 files
-    target_node = "full_frame"  # Data node in VDS file
+    target_node = "data"  # Data node in VDS file
     mode = CREATE  # Write mode for vds file
     log_level = 2
 
