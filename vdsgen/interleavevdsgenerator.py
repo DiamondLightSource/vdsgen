@@ -8,7 +8,7 @@ from .group import VirtualSource, VirtualTarget, VirtualMap
 from .hyperslab import Hyperslab
 
 
-class FrameVDSGenerator(VDSGenerator):
+class InterleaveVDSGenerator(VDSGenerator):
 
     """A class to generate Virtual Dataset frames from sub-frames."""
 
@@ -36,7 +36,7 @@ class FrameVDSGenerator(VDSGenerator):
         self.block_size = block_size
         self.total_frames = 0
 
-        super(FrameVDSGenerator, self).__init__(
+        super(InterleaveVDSGenerator, self).__init__(
             path, prefix, files, output, source, source_node, target_node,
             fill_value, log_level)
 
