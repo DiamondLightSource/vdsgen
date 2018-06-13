@@ -32,30 +32,36 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    """Run program."""
-    args = parse_args()
+def generate_raw_files(prefix, frames, files, block_size, x_dim, y_dim):
 
     values = []
-    for _ in range(args.files):
+    for _ in range(files):
         values.append(list())
 
-    for frame_idx in range(args.frames):
-        if args.files > 1:
-            block_idx = frame_idx // args.block_size
-            file_idx = block_idx % args.files
+    for frame_idx in range(frames):
+        if files > 1:
+            block_idx = frame_idx // block_size
+            file_idx = block_idx % files
         else:
             file_idx = 0
         values[file_idx].append(frame_idx + 1)
 
     for file_idx, file_values in enumerate(values):
-        with h5py.File(args.prefix + "_{}.h5".format(file_idx)) as f:
+        with h5py.File(prefix + "_{}.h5".format(file_idx)) as f:
             f.create_dataset("data",
                              shape=(len(values[file_idx]),
-                                    args.y_dim, args.x_dim))
+                                    y_dim, x_dim))
             for idx, value in enumerate(file_values):
-                f["data"][idx] = np.full((args.y_dim, args.x_dim),
+                f["data"][idx] = np.full((y_dim, x_dim),
                                          value, dtype="int8")
+
+
+def main():
+    """Run program."""
+    args = parse_args()
+
+    generate_raw_files(args.prefix, args.files, args.frames, args.block_size,
+                       args.x_dim, args.y_dim)
 
 
 if __name__ == "__main__":
