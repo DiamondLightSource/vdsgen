@@ -61,7 +61,7 @@ def parse_args():
     mode_args.add_argument(
         "--mode", type=str, dest="mode", default="sub-frames",
         choices=["sub-frames", "interleave", "gap-fill"],
-        help="Type of VD to create\n"
+        help="Type of VDS to create\n"
              "  sub-frames:    ND datasets containing sub-frames of full "
              "images\n"
              "  interleave:    1D datasets containing interspersed blocks of "
