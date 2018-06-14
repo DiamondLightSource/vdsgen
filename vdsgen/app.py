@@ -110,10 +110,15 @@ def parse_args():
     if args.empty and args.files is None:
         parser.error(
             "To make an empty VDS you must explicitly define --files for the "
-            "eventual raw datasets.")
-    if args.files is not None \
-            and len(args.files) < 2 and args.mode != "gap-fill":
-        parser.error("Must define at least two files to combine.")
+            "eventual raw datasets."
+        )
+    # Check correct number of files given for the selected mode
+    if args.files is not None:
+        if args.mode == "gap-fill":
+            if len(args.files) != 1:
+                parser.error("Gap fill can only operate on a single dataset.")
+        elif len(args.files) < 2:
+            parser.error("Must define at least two files to combine.")
 
     return args
 
