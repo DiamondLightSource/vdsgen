@@ -114,11 +114,8 @@ def parse_args():
         )
     # Check correct number of files given for the selected mode
     if args.files is not None:
-        if args.mode == "gap-fill":
-            if len(args.files) != 1:
-                parser.error("Gap fill can only operate on a single dataset.")
-        elif len(args.files) < 2:
-            parser.error("Must define at least two files to combine.")
+        if args.mode == "gap-fill" and len(args.files) != 1:
+            parser.error("Gap fill can only operate on a single dataset.")
 
     return args
 

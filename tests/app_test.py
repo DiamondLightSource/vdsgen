@@ -24,19 +24,21 @@ class ParseArgsTest(unittest.TestCase):
 
         app.parse_args()
 
+        parse_mock.assert_called_once_with()
         error_mock.assert_called_once_with(
             "To make an empty VDS you must explicitly define --files for the "
             "eventual raw datasets.")
 
     @patch(parser_patch_path + '.error')
     @patch(parser_patch_path + '.parse_args',
-           return_value=MagicMock(empty=True, files=["file"]))
-    def test_only_one_file_then_error(self, parse_mock, error_mock):
+           return_value=MagicMock(mode="gap-fill", files=["one.h5", "two.h5"]))
+    def test_gap_fill_only_one_file(self, parse_mock, error_mock):
 
         app.parse_args()
 
+        parse_mock.assert_called_once_with()
         error_mock.assert_called_once_with(
-            "Must define at least two files to combine.")
+            "Gap fill can only operate on a single dataset.")
 
 
 class MainTest(unittest.TestCase):
