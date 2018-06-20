@@ -143,8 +143,8 @@ def main():
             source=source_metadata,
             source_node=args.source_node,
             target_node=args.target_node,
-            fill_value=args.fill_value,
             block_size=args.block_size,
+            fill_value=args.fill_value,
             log_level=args.log_level)
     elif args.mode == "sub-frames":
         gen = SubFrameVDSGenerator(
@@ -161,7 +161,7 @@ def main():
     elif args.mode == "gap-fill":
         gen = ExcaliburGapFillVDSGenerator(
             args.path,
-            prefix=args.prefix, files=args.f.iles,
+            prefix=args.prefix, files=args.files,
             output=args.output,
             source=source_metadata,
             source_node=args.source_node,

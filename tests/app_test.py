@@ -9,7 +9,10 @@ from vdsgen import app
 app_patch_path = "vdsgen.app"
 parser_patch_path = app_patch_path + ".ArgumentParser"
 VDSGenerator_patch_path = app_patch_path + ".VDSGenerator"
+InterleaveVDSGenerator_patch_path = app_patch_path + ".InterleaveVDSGenerator"
 SubFrameVDSGenerator_patch_path = app_patch_path + ".SubFrameVDSGenerator"
+ExcaliburGapFillVDSGenerator_patch_path = app_patch_path + \
+                                          ".ExcaliburGapFillVDSGenerator"
 
 
 class ParseArgsTest(unittest.TestCase):
@@ -40,14 +43,7 @@ class MainTest(unittest.TestCase):
 
     @patch(SubFrameVDSGenerator_patch_path)
     @patch(app_patch_path + '.parse_args',
-           return_value=MagicMock(
-               path="/test/path", empty=True,
-               prefix=None, files=["file1.hdf5", "file2.hdf5"], output="vds",
-               shape=(3, 256, 2048), data_type="int16",
-               source_node="data", target_node="full_frame",
-               stripe_spacing=3, module_spacing=127, fill_value=-1,
-               mode="sub-frames",
-               log_level=2))
+           return_value=MagicMock(mode="sub-frames", empty=True))
     def test_main_empty(self, parse_mock, init_mock):
         gen_mock = init_mock.return_value
         args_mock = parse_mock.return_value
@@ -64,35 +60,70 @@ class MainTest(unittest.TestCase):
             target_node=args_mock.target_node,
             stripe_spacing=args_mock.stripe_spacing,
             module_spacing=args_mock.module_spacing,
-            fill_value=-1,
+            fill_value=args_mock.fill_value,
             log_level=args_mock.log_level)
 
         gen_mock.generate_vds.assert_called_once_with()
 
-    @patch("os.path.isfile", return_value=True)
     @patch(SubFrameVDSGenerator_patch_path)
     @patch(app_patch_path + '.parse_args',
-           return_value=MagicMock(
-               path="/test/path", empty=False,
-               prefix=None, files=["file1.hdf5", "file2.hdf5"], output="vds",
-               frames=3, height=256, width=2048, data_type="int16",
-               source_node="data", target_node="full_frame",
-               stripe_spacing=3, module_spacing=127, fill_value=-1,
-               mode="sub-frames",
-               log_level=2))
-    def test_main_not_empty(self, parse_mock, generate_mock, _):
+           return_value=MagicMock(mode="sub-frames", empty=False))
+    def test_main_not_empty(self, parse_mock, init_mock):
         args_mock = parse_mock.return_value
 
         app.main()
 
         parse_mock.assert_called_once_with()
-        generate_mock.assert_called_once_with(
+        init_mock.assert_called_once_with(
             args_mock.path,
-            prefix=args_mock.prefix, output="vds", files=args_mock.files,
+            prefix=args_mock.prefix, files=args_mock.files,
+            output=args_mock.output,
             source=None,
             source_node=args_mock.source_node,
-            stripe_spacing=args_mock.stripe_spacing,
             target_node=args_mock.target_node,
+            stripe_spacing=args_mock.stripe_spacing,
             module_spacing=args_mock.module_spacing,
-            fill_value=-1,
+            fill_value=args_mock.fill_value,
+            log_level=args_mock.log_level)
+
+    @patch(InterleaveVDSGenerator_patch_path)
+    @patch(app_patch_path + '.parse_args',
+           return_value=MagicMock(mode="interleave", empty=False))
+    def test_main_interleave(self, parse_mock, init_mock):
+        args_mock = parse_mock.return_value
+
+        app.main()
+
+        parse_mock.assert_called_once_with()
+        init_mock.assert_called_once_with(
+            args_mock.path,
+            prefix=args_mock.prefix, files=args_mock.files,
+            output=args_mock.output,
+            source=None,
+            source_node=args_mock.source_node,
+            target_node=args_mock.target_node,
+            block_size=args_mock.block_size,
+            fill_value=args_mock.fill_value,
+            log_level=args_mock.log_level)
+
+    @patch(ExcaliburGapFillVDSGenerator_patch_path)
+    @patch(app_patch_path + '.parse_args',
+           return_value=MagicMock(mode="gap-fill", modules=3, empty=False))
+    def test_main_gap_fill(self, parse_mock, init_mock):
+        args_mock = parse_mock.return_value
+
+        app.main()
+
+        parse_mock.assert_called_once_with()
+        init_mock.assert_called_once_with(
+            args_mock.path,
+            prefix=args_mock.prefix, files=args_mock.files,
+            output=args_mock.output,
+            source=None,
+            source_node=args_mock.source_node,
+            target_node=args_mock.target_node,
+            modules=args_mock.modules,
+            chip_spacing=args_mock.stripe_spacing,
+            module_spacing=args_mock.module_spacing,
+            fill_value=args_mock.fill_value,
             log_level=args_mock.log_level)
