@@ -44,7 +44,7 @@ def generate_raw_files(prefix, frames, files, block_size, x_dim, y_dim):
             file_idx = block_idx % files
         else:
             file_idx = 0
-        values[file_idx].append(frame_idx + 1)
+        values[file_idx].append(frame_idx)
 
     for file_idx, file_values in enumerate(values):
         with h5py.File(prefix + "_{}.h5".format(file_idx)) as f:
