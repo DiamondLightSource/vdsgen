@@ -4,10 +4,30 @@ import sys
 import logging
 from unittest import TestCase
 
+import numpy as np
 import h5py as h5
 
 from vdsgen import SubFrameVDSGenerator, InterleaveVDSGenerator, \
     ExcaliburGapFillVDSGenerator, generate_raw_files
+
+
+def create_pixel_pattern(top_value, bottom_value,
+                         horizontal_gap, vertical_gap,
+                         fill_value=-1.0):
+    WIDTH = 5
+    pattern = [[top_value] * WIDTH,
+               [bottom_value] * WIDTH]
+
+    # Insert rows for horizontal gaps
+    for _ in range(horizontal_gap):
+        pattern.insert(1, [fill_value] * WIDTH)
+
+    # Insert elements in all rows for vertical gaps
+    if vertical_gap != 0:
+        for row in pattern:
+            row[1: WIDTH - 1] = [fill_value] * vertical_gap
+
+    return np.array(pattern)
 
 
 class SystemTest(TestCase):
@@ -63,6 +83,7 @@ class SystemTest(TestCase):
         WIDTH = 2048
         HEIGHT = 256
         FEMS = 6
+        CHIPS = 8
         # Generate 6 raw files each with 1/6th of a single 2048x1536 frame
         print("Creating raw files...")
         generate_raw_files("stripe", FEMS * FRAMES, FEMS, 1, WIDTH, HEIGHT)
@@ -79,26 +100,31 @@ class SystemTest(TestCase):
             print("Verifying dataset...")
             # Check shape
             self.assertEqual(vds_dataset.shape, (FRAMES, 1791, WIDTH))
-            # Check first pixel of each stripe and pixel above for fill value
-            row = 0
-            self.assertEqual(vds_dataset[0][row][0], 0.0)       # FEM 1 pixel 1
-            row += 256 + 3                                      # Stripe space
-            self.assertEqual(vds_dataset[0][row - 1][0], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][row][0], 1.0)       # FEM 2 pixel 1
-            row += 256 + 123                                    # Module space
-            self.assertEqual(vds_dataset[0][row - 1][0], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][row][0], 2.0)       # FEM 3 pixel 1
-            row += 256 + 3                                      # Stripe space
-            self.assertEqual(vds_dataset[0][row - 1][0], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][row][0], 3.0)       # FEM 4 pixel 1
-            row += 256 + 123                                    # Module space
-            self.assertEqual(vds_dataset[0][row - 1][0], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][row][0], 4.0)       # FEM 5 pixel 1
-            row += 256 + 3                                      # Stripe space
-            self.assertEqual(vds_dataset[0][row - 1][0], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][row][0], 5.0)       # FEM 6 pixel 1
+
+            self.assertEqual(vds_dataset[0][0][0], 0.0)  # FEM 1 pixel 1
+
+            # Check corners where 4 chips meet have expected pattern
+            row = 255
+            column = 255
+            spacings = [3, 123, 3, 123, 3]
+            frame = vds_dataset[0]
+            for stripe_idx in range(FEMS - 1):  # FEMS - 1 Vertical Gaps
+                spacing = spacings[stripe_idx]
+                pattern = create_pixel_pattern(
+                    top_value=1.0 * stripe_idx,
+                    bottom_value=1.0 * (stripe_idx + 1),
+                    horizontal_gap=spacing, vertical_gap=0, fill_value=-1.0
+                )
+                for chip_idx in range(CHIPS - 1):  # CHIPS - 1 Horizontal Gaps
+                    test = frame[row: row + spacing + 2, column: column + 5]
+                    np.testing.assert_array_equal(pattern, test)
+                    column += 256 + 3
+                column = 255
+                row += 256 + spacing
 
     def test_gap_fill(self):
+        FEMS = 6
+        CHIPS = 8
         # Generate a single file with 100 2048x1536 frames
         print("Creating raw files...")
         generate_raw_files("raw", 100, 1, 1, 2048, 1536)
@@ -115,39 +141,23 @@ class SystemTest(TestCase):
             print("Verifying dataset...")
             # Check shape
             self.assertEqual(vds_dataset.shape, (100, 1791, 2069))
-            # Check first pixel of each stripe and pixel above for fill value
-            row = 0
-            self.assertEqual(vds_dataset[0][row][0], 0.0)       # FEM 1 pixel 1
-            row += 256 + 3                                      # Stripe space
-            self.assertEqual(vds_dataset[0][row - 1][0], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][row][0], 0.0)       # FEM 2 pixel 1
-            row += 256 + 123                                    # Module space
-            self.assertEqual(vds_dataset[0][row - 1][0], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][row][0], 0.0)       # FEM 3 pixel 1
-            row += 256 + 3                                      # Stripe space
-            self.assertEqual(vds_dataset[0][row - 1][0], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][row][0], 0.0)       # FEM 4 pixel 1
-            row += 256 + 123                                    # Module space
-            self.assertEqual(vds_dataset[0][row - 1][0], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][row][0], 0.0)       # FEM 5 pixel 1
-            row += 256 + 3                                      # Stripe space
-            self.assertEqual(vds_dataset[0][row - 1][0], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][row][0], 0.0)       # FEM 6 pixel 1
-            # Check first pixel of each chip in first row
-            col = 0
-            self.assertEqual(vds_dataset[0][0][col], 0.0)       # Chip 1
-            col += 256 + 3                                      # Chip space
-            self.assertEqual(vds_dataset[0][0][col - 1], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][0][col], 0.0)       # Chip 2
-            col += 256 + 3                                      # Chip space
-            self.assertEqual(vds_dataset[0][0][col - 1], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][0][col], 0.0)       # Chip 3
-            col += 256 + 3                                      # Chip space
-            self.assertEqual(vds_dataset[0][0][col - 1], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][0][col], 0.0)       # Chip 4
-            col += 256 + 3                                      # Chip space
-            self.assertEqual(vds_dataset[0][0][col - 1], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][0][col], 0.0)       # Chip 5
-            col += 256 + 3                                      # Chip space
-            self.assertEqual(vds_dataset[0][0][col - 1], -1.0)  # Fill value
-            self.assertEqual(vds_dataset[0][0][col], 0.0)       # Chip 6
+
+            self.assertEqual(vds_dataset[0][0][0], 0.0)  # FEM 1 pixel 1
+
+            # Check corners where 4 chips meet have expected pattern
+            row = 255
+            column = 255
+            spacings = [3, 123, 3, 123, 3]
+            frame = vds_dataset[0]
+            for stripe_idx in range(FEMS - 1):  # FEMS - 1 Vertical Gaps
+                spacing = spacings[stripe_idx]
+                pattern = create_pixel_pattern(
+                    top_value=0.0, bottom_value=0.0,
+                    horizontal_gap=spacing, vertical_gap=3, fill_value=-1.0
+                )
+                for chip_idx in range(CHIPS - 1):  # CHIPS - 1 Horizontal Gaps
+                    test = frame[row: row + spacing + 2, column: column + 5]
+                    np.testing.assert_array_equal(pattern, test)
+                    column += 256 + 3
+                column = 255
+                row += 256 + spacing
