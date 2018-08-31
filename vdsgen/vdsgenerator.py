@@ -1,4 +1,3 @@
-#!/bin/env dls-python
 """A class for generating virtual datasets from individual HDF5 files."""
 
 import os
@@ -8,11 +7,6 @@ import logging
 from collections import namedtuple
 
 import h5py as h5
-
-# Replace File parent Group with our VGroup subclass that has the additional
-# create_virtual_dataset method
-from .group import VGroup
-h5.File.__bases__ = (VGroup,)
 
 SourceMeta = namedtuple("SourceMeta", ["frames", "height", "width", "dtype"])
 
@@ -75,12 +69,12 @@ class VDSGenerator(object):
         # If Files not given, find files using path and prefix.
         if files is None:
             self.prefix = prefix
-            self.datasets = self.find_files()
-            files = [path_.split("/")[-1] for path_ in self.datasets]
+            self.files = self.find_files()
+            files = [path_.split("/")[-1] for path_ in self.files]
         # Else, get common prefix of given files and store full path
         else:
             self.prefix = os.path.commonprefix(files)
-            self.datasets = [os.path.join(path, file_) for file_ in files]
+            self.files = [os.path.join(path, file_) for file_ in files]
 
         # If output vds file name given, use, otherwise generate a default
         if output is None:
@@ -90,7 +84,7 @@ class VDSGenerator(object):
 
         # If source not given, check files exist and get metadata.
         if source is None:
-            for file_ in self.datasets:
+            for file_ in self.files:
                 if not os.path.isfile(file_):
                     raise IOError(
                         "File {} does not exist. To create VDS from raw "
@@ -136,12 +130,12 @@ class VDSGenerator(object):
             else:
                 self.mode = self.APPEND
 
-        map_list = self.create_vds_maps(self.source_metadata)
+        virtual_layout = self.create_virtual_layout(self.source_metadata)
 
         self.logger.info("Creating VDS at %s", self.output_file)
         with h5.File(self.output_file, self.mode, libver="latest") as vds:
             self.validate_node(vds)
-            vds.create_virtual_dataset(VMlist=map_list,
+            vds.create_virtual_dataset(self.target_node, virtual_layout,
                                        fillvalue=self.fill_value)
 
     def find_files(self):
@@ -212,14 +206,14 @@ class VDSGenerator(object):
         """
         raise NotImplementedError("Must be implemented in child class")
 
-    def create_vds_maps(self, source):
-        """Create a list of VirtualMaps of raw data to the VDS.
+    def create_virtual_layout(self, source_meta):
+        """Create a VirtualLayout mapping raw data to the VDS.
 
         Args:
-            source(Source): Source attributes
+            source_meta(SourceMeta): Source attributes
 
         Returns:
-            list(VirtualMap): Maps describing links between raw data and VDS
+            VirtualLayout: Object describing links between raw data and VDS
 
         """
         raise NotImplementedError("Must be implemented in child class")

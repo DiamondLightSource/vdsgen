@@ -1,8 +1,3 @@
-#!/bin/env dls-python
-from pkg_resources import require
-require("numpy")
-require("h5py")
-
 import numpy as np
 import h5py
 

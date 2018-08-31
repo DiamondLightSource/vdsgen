@@ -51,7 +51,7 @@ class VDSGeneratorInitTest(unittest.TestCase):
         self.assertEqual("/test/path", gen.path)
         self.assertEqual("stripe_", gen.prefix)
         self.assertEqual("stripe_vds.hdf5", gen.name)
-        self.assertEqual(find_mock.return_value, gen.datasets)
+        self.assertEqual(find_mock.return_value, gen.files)
         self.assertEqual(process_mock.return_value, gen.source_metadata)
         self.assertEqual("data", gen.source_node)
         self.assertEqual("data", gen.target_node)
@@ -74,7 +74,7 @@ class VDSGeneratorInitTest(unittest.TestCase):
         self.assertEqual("/test/path", gen.path)
         self.assertEqual("stripe_", gen.prefix)
         self.assertEqual("vds.hdf5", gen.name)
-        self.assertEqual(file_paths, gen.datasets)
+        self.assertEqual(file_paths, gen.files)
         self.assertEqual(source, gen.source_metadata)
         self.assertEqual("entry/data/data", gen.source_node)
         self.assertEqual("entry/detector/detector1", gen.target_node)
@@ -182,7 +182,7 @@ class SimpleFunctionsTest(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             gen.process_source_datasets()
 
-    def test_create_vds_maps(self):
+    def test_create_virtual_layout(self):
         gen = VDSGeneratorTester(output_file="/test/path/vds.hdf5",
                                  stripe_spacing=10, module_spacing=100,
                                  target_node="full_frame", source_node="data",
@@ -191,7 +191,7 @@ class SimpleFunctionsTest(unittest.TestCase):
                                          dtype="uint16")
 
         with self.assertRaises(NotImplementedError):
-            gen.create_vds_maps(source)
+            gen.create_virtual_layout(source)
 
 
 class ValidateNodeTest(unittest.TestCase):
@@ -231,7 +231,7 @@ class GenerateVDSTest(unittest.TestCase):
     @patch('os.path.isfile', return_value=False)
     @patch(VDSGenerator_patch_path + '.validate_node')
     @patch(h5py_patch_path + '.File', return_value=file_mock)
-    @patch(VDSGenerator_patch_path + '.create_vds_maps')
+    @patch(VDSGenerator_patch_path + '.create_virtual_layout')
     def test_generate_vds_create(self, create_mock,
                                  h5file_mock, validate_mock, isfile_mock):
         source_mock = MagicMock()
@@ -254,12 +254,12 @@ class GenerateVDSTest(unittest.TestCase):
         h5file_mock.assert_called_once_with(
             "/test/path/vds.hdf5", "w", libver="latest")
         vds_file_mock.create_virtual_dataset.assert_called_once_with(
-            VMlist=create_mock.return_value, fillvalue=-1)
+            "full_frame", create_mock.return_value, fillvalue=-1)
 
     @patch('os.path.isfile', return_value=True)
     @patch(VDSGenerator_patch_path + '.validate_node')
     @patch(h5py_patch_path + '.File', return_value=file_mock)
-    @patch(VDSGenerator_patch_path + '.create_vds_maps')
+    @patch(VDSGenerator_patch_path + '.create_virtual_layout')
     def test_generate_vds_append(self, create_mock,
                                  h5file_mock, validate_mock, isfile_mock):
         source_mock = MagicMock()
@@ -283,7 +283,7 @@ class GenerateVDSTest(unittest.TestCase):
             call("/test/path/vds.hdf5", "r", libver="latest"),
             call("/test/path/vds.hdf5", "a", libver="latest")])
         vds_file_mock.create_virtual_dataset.assert_called_once_with(
-            VMlist=create_mock.return_value, fillvalue=-1)
+            "full_frame", create_mock.return_value, fillvalue=-1)
 
     @patch('os.path.isfile', return_value=True)
     @patch(h5py_patch_path + '.File', return_value=file_mock)

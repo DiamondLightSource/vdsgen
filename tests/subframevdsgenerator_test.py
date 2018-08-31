@@ -27,7 +27,7 @@ class SubFrameVDSGeneratorTester(SubFrameVDSGenerator):
         self.logger = MagicMock()
 
 
-class FrameVDSGeneratorInitTest(unittest.TestCase):
+class SubFrameVDSGeneratorInitTest(unittest.TestCase):
 
     @patch(VDSGenerator_patch_path + '.__init__')
     def test_super_called(self, super_mock):
@@ -44,7 +44,7 @@ class SimpleFunctionsTest(unittest.TestCase):
                              dtype="uint16"))
     def test_process_source_datasets_given_valid_data(self, grab_mock):
         gen = SubFrameVDSGeneratorTester(
-            datasets=["stripe_1.h5", "stripe_2.h5"])
+            files=["stripe_1.h5", "stripe_2.h5"])
         expected_source = vdsgenerator.SourceMeta(
             frames=(3,), height=256, width=2048, dtype="uint16")
 
@@ -59,7 +59,7 @@ class SimpleFunctionsTest(unittest.TestCase):
                              dtype="uint16")])
     def test_process_source_datasets_given_mismatched_data(self, grab_mock):
         gen = SubFrameVDSGeneratorTester(
-            datasets=["stripe_1.h5", "stripe_2.h5"])
+            files=["stripe_1.h5", "stripe_2.h5"])
 
         with self.assertRaises(ValueError):
             gen.process_source_datasets()
@@ -68,35 +68,33 @@ class SimpleFunctionsTest(unittest.TestCase):
 
     def test_construct_vds_spacing(self):
         gen = SubFrameVDSGeneratorTester(
-            datasets=[""] * 6, stripe_spacing=10, module_spacing=100)
+            files=[""] * 6, stripe_spacing=10, module_spacing=100)
         expected_spacing = [10, 100, 10, 100, 10, 0]
 
         spacing = gen.construct_vds_spacing()
 
         self.assertEqual(expected_spacing, spacing)
 
-    @patch(vdsgen_patch_path + '.VirtualMap')
-    @patch(vdsgen_patch_path + '.VirtualSource')
-    @patch(vdsgen_patch_path + '.VirtualTarget')
-    def test_create_vds_maps(self, target_mock, source_mock, map_mock):
+    file_mock = MagicMock()
+
+    @patch(h5py_patch_path + '.File', return_value=file_mock)
+    @patch(h5py_patch_path + '.VirtualSource')
+    @patch(h5py_patch_path + '.VirtualLayout')
+    def test_create_virtual_layout(self, layout_mock, source_mock, file_mock):
         gen = SubFrameVDSGeneratorTester(
             output_file="/test/path/vds.hdf5",
             stripe_spacing=10, module_spacing=100,
             target_node="full_frame", source_node="data",
-            datasets=["source"] * 6, name="vds.hdf5")
+            files=["raw.hdf5"] * 6, name="vds.hdf5")
         source = vdsgenerator.SourceMeta(
             frames=(3,), height=256, width=2048, dtype="uint16")
+        dataset_mock = MagicMock()
+        self.file_mock.reset_mock()
+        vds_file_mock = self.file_mock.__enter__.return_value
+        vds_file_mock.__getitem__.return_value = dataset_mock
 
-        map_list = gen.create_vds_maps(source)
+        layout = gen.create_virtual_layout(source)
 
-        target_mock.assert_called_once_with("/test/path/vds.hdf5",
-                                            "full_frame",
-                                            shape=(3, 1766, 2048))
-        source_mock.assert_has_calls([call("source", "data",
-                                           shape=(3, 256, 2048))] * 6)
-        # TODO: Improve this assert by passing numpy arrays to check slicing
-        map_mock.assert_has_calls([
-            call(source_mock.return_value,
-                 target_mock.return_value.__getitem__.return_value,
-                 dtype="uint16")] * 6)
-        self.assertEqual([map_mock.return_value] * 6, map_list)
+        layout_mock.assert_called_once_with((3, 1766, 2048), "uint16")
+        source_mock.assert_has_calls([call(dataset_mock)] * 5)
+        # TODO: Pass numpy arrays to check slicing

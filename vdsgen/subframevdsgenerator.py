@@ -1,9 +1,8 @@
-#!/bin/env dls-python
 """A class for generating virtual dataset frames from sub-frames."""
 
+import h5py as h5
+
 from .vdsgenerator import VDSGenerator, SourceMeta
-from .group import VirtualSource, VirtualTarget, VirtualMap
-from .hyperslab import Hyperslab
 
 
 class SubFrameVDSGenerator(VDSGenerator):
@@ -54,9 +53,9 @@ class SubFrameVDSGenerator(VDSGenerator):
                 height width and data type)
 
         """
-        data = self.grab_metadata(self.datasets[0])
+        data = self.grab_metadata(self.files[0])
         frames = [data["frames"]]
-        for dataset in self.datasets[1:]:
+        for dataset in self.files[1:]:
             temp_data = self.grab_metadata(dataset)
             frames.append(temp_data["frames"])
             for attribute, value in data.items():
@@ -81,7 +80,7 @@ class SubFrameVDSGenerator(VDSGenerator):
             VDS: Dataset spacing of virtual data set
 
         """
-        stripes = len(self.datasets)
+        stripes = len(self.files)
         spacing = [0] * stripes
         for idx in range(0, stripes - 1, 2):
             spacing[idx] = self.stripe_spacing
@@ -92,7 +91,7 @@ class SubFrameVDSGenerator(VDSGenerator):
 
         return spacing
 
-    def create_vds_maps(self, source_meta):
+    def create_virtual_layout(self, source_meta):
         """Create a list of VirtualMaps of raw data to the VDS.
 
         Args:
@@ -102,41 +101,32 @@ class SubFrameVDSGenerator(VDSGenerator):
             list(VirtualMap): Maps describing links between raw data and VDS
 
         """
-        source_shape = source_meta.frames + (source_meta.height,
-                                             source_meta.width)
         spacing = self.construct_vds_spacing()
-        target_height = source_meta.height * len(self.datasets) + sum(spacing)
+        target_height = source_meta.height * len(self.files) + sum(spacing)
         target_shape = source_meta.frames + (target_height,
                                              source_meta.width)
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n"
                           "  Spacing: %s", target_shape, spacing)
 
-        vds = VirtualTarget(self.output_file, self.target_node,
-                            shape=target_shape)
+        v_layout = h5.VirtualLayout(target_shape, source_meta.dtype)
 
-        map_list = []
         current_position = 0
-        for idx, dataset in enumerate(self.datasets):
-            v_source = VirtualSource(dataset, self.source_node,
-                                     shape=source_shape)
+        for stripe_idx, file_path in enumerate(self.files):
+            with h5.File(file_path) as source_file:
+                v_source = h5.VirtualSource(source_file[self.source_node])
 
             start = current_position
-            stop = start + source_meta.height + spacing[idx]
-            current_position = stop
+            end = start + source_meta.height
+            current_position = end + spacing[stripe_idx]
 
             # Hyperslab: All frames for each axis,
             #            Height bounds of stripe,
             #            Entire width
-            hyperslab = Hyperslab([self.FULL_SLICE] * len(source_meta.frames),
-                                  slice(start, stop),
-                                  self.FULL_SLICE)
+            v_layout[..., start:end, :] = v_source
 
-            v_target = vds[hyperslab.tuple]
-            v_map = VirtualMap(v_source, v_target, dtype=source_meta.dtype)
+            self.logger.debug("Mapping %s[..., %s:%s, :] to %s[...].",
+                              self.name, start, end,
+                              file_path.split("/")[-1])
 
-            self.logger.debug("Mapping dataset %s to %s of %s.",
-                              dataset.split("/")[-1], hyperslab, self.name)
-            map_list.append(v_map)
-
-        return map_list
+        return v_layout
