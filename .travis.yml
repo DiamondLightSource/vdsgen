@@ -1,11 +1,15 @@
 language: python
-python:
-  - 2.7
-  - 3.6
+
+env:
+  global:
+    - HDF5_CACHE_DIR=$HOME/.cache/hdf5
+    - HDF5_VERSION=1.10.3
+    - HDF5_DIR=$HDF5_CACHE_DIR/$HDF5_VERSION
 
 cache:
   directories:
     - $HOME/.cache/pip
+    - $HDF5_CACHE_DIR
 
 addons:
   apt:
@@ -13,6 +17,7 @@ addons:
       - libhdf5-serial-dev
 
 install:
+  - ci/install-hdf5.sh
   - pip install -r requirements.txt
   - pip install coveralls coverage
 
