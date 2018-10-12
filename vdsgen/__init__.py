@@ -1,10 +1,11 @@
-"""Make VDSGenerator easy to import."""
-from .vdsgenerator import VDSGenerator
+"""Make things easy to import."""
 from .subframevdsgenerator import SubFrameVDSGenerator
 from .interleavevdsgenerator import InterleaveVDSGenerator
 from .excaliburgapfillvdsgenerator import ExcaliburGapFillVDSGenerator
+from .reshapevdsgenerator import ReshapeVDSGenerator
 
 from .rawsourcegenerator import generate_raw_files
 
 __all__ = ["InterleaveVDSGenerator", "SubFrameVDSGenerator",
-           "ExcaliburGapFillVDSGenerator", "generate_raw_files"]
+           "ReshapeVDSGenerator", "ExcaliburGapFillVDSGenerator",
+           "generate_raw_files"]

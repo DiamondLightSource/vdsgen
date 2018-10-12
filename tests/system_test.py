@@ -8,7 +8,7 @@ import numpy as np
 import h5py as h5
 
 from vdsgen import SubFrameVDSGenerator, InterleaveVDSGenerator, \
-    ExcaliburGapFillVDSGenerator, generate_raw_files
+    ExcaliburGapFillVDSGenerator, ReshapeVDSGenerator, generate_raw_files
 
 
 def create_pixel_pattern(top_value, bottom_value,
@@ -32,8 +32,7 @@ def create_pixel_pattern(top_value, bottom_value,
 
 class SystemTest(TestCase):
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         logging.basicConfig(
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -41,8 +40,7 @@ class SystemTest(TestCase):
             if file_.endswith(".h5"):
                 os.remove(file_)
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
         for file_ in os.listdir("./"):
             if file_.endswith(".h5"):
                 os.remove(file_)
@@ -161,3 +159,36 @@ class SystemTest(TestCase):
                     column += 256 + 3
                 column = 255
                 row += 256 + spacing
+
+    def test_reshape(self):
+        FRAMES = 100
+        SHAPE = (5, 4, 5)
+        # Generate a single file with 100 2048x1536 frames
+        print("Creating raw files...")
+        generate_raw_files("raw", FRAMES, 1, 1, 2048, 1536)
+        print("Creating VDS...")
+        gen = ReshapeVDSGenerator(
+            shape=SHAPE, path="./", files=["raw_0.h5"],
+            output="reshaped.h5", log_level=1
+        )
+        gen.generate_vds()
+
+        print("Opening VDS...")
+        with h5.File("reshaped.h5", mode="r") as h5_file:
+            vds_dataset = h5_file["data"]
+
+            print("Verifying dataset...")
+            # Check first pixel of each frame
+            print("0 %", end="")
+            frame_idx = 0
+            for i in range(SHAPE[0]):
+                for j in range(SHAPE[1]):
+                    for k in range(SHAPE[2]):
+                        self.assertEqual(vds_dataset[i][j][k][0][0],
+                                         1.0 * frame_idx)
+                        progress = int((frame_idx + 1) *
+                                       (1.0 / FRAMES * 100))
+                        print("\r{} %".format(progress), end="")
+                        sys.stdout.flush()
+                        frame_idx += 1
+            print()
