@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import sys
+from timeit import default_timer as timer
 import logging
 from unittest import TestCase
 
@@ -97,6 +98,23 @@ class SystemTest(TestCase):
                 print("\r{} %".format(progress), end="")
                 sys.stdout.flush()
             print()
+
+    def test_interleave_speed(self):
+        FILES = 4
+        FRAMES = 1000000
+        WIDTH = 2048
+        HEIGHT = 1536
+        print("Creating VDS...")
+        start = timer()
+        gen = InterleaveVDSGenerator(
+            "./", files=["OD_{}.h5".format(idx) for idx in range(FILES)],
+            source=dict(shape=((FRAMES / FILES,) * FILES, HEIGHT, WIDTH),
+                        dtype="float32"),
+            block_size=10, log_level=1
+        )
+        gen.generate_vds()
+        end = timer()
+        print("Interleave {} frames - Time: {}".format(FRAMES, end - start))
 
     def test_sub_frames(self):
         FRAMES = 1
@@ -264,6 +282,22 @@ class SystemTest(TestCase):
         generate_raw_files("raw", FRAMES, 1, 1, 2048, 1536)
 
         self._validate_reshape(SHAPE, FRAMES)
+
+    def test_reshape_speed(self):
+        FRAMES = 1000000
+        SHAPE = (500, 20, 10)
+        WIDTH = 2048
+        HEIGHT = 1536
+        start = timer()
+        print("Creating VDS...")
+        gen = ReshapeVDSGenerator(
+            shape=SHAPE, path="./", files=["raw_0.h5"],
+            source=dict(shape=(FRAMES, HEIGHT, WIDTH), dtype="float32"),
+            output="reshaped.h5", log_level=1
+        )
+        gen.generate_vds()
+        end = timer()
+        print("Reshape {} -> {} - Time: {}".format(FRAMES, SHAPE, end - start))
 
     def _validate_reshape(self, shape, frames):
         print("Opening VDS...")
