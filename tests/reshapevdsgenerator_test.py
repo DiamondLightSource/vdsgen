@@ -99,4 +99,6 @@ class SimpleFunctionsTest(unittest.TestCase):
         layout = gen.create_virtual_layout(source)
 
         layout_mock.assert_called_once_with((5, 3, 10, 256, 2048), "uint16")
-        source_mock.assert_called_once_with(dataset_mock)
+        source_mock.assert_called_once_with(
+            "raw.h5", dtype="uint16", name="data", shape=(3, 256, 2048)
+        )

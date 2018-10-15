@@ -91,5 +91,6 @@ class SimpleFunctionsTest(unittest.TestCase):
         layout = gen.create_virtual_layout(source)
 
         layout_mock.assert_called_once_with((3, 1791, 2069), "uint16")
-        source_mock.assert_called_once_with(dataset_mock)
+        source_mock.assert_called_once_with(
+            "raw.h5", name="data", dtype="uint16", shape=(3, 1536, 2048))
         # TODO: Pass numpy arrays to check slicing

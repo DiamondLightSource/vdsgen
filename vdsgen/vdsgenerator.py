@@ -93,12 +93,17 @@ class VDSGenerator(object):
             self.source_metadata = self.process_source_datasets()
         # Else, store given source metadata
         else:
-            frames, height, width = self.parse_shape(source['shape'])
-            self.source_metadata = SourceMeta(
-                frames=frames, height=height, width=width,
-                dtype=source['dtype'])
+            self.source_metadata = self.process_source_metadata(source)
 
         self.output_file = os.path.abspath(os.path.join(self.path, self.name))
+
+    def process_source_metadata(self, source):
+        frames, height, width = self.parse_shape(source['shape'])
+        source_metadata = SourceMeta(
+            frames=frames, height=height, width=width,
+            dtype=source['dtype'])
+
+        return source_metadata
 
     @staticmethod
     def parse_shape(shape):

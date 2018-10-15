@@ -46,13 +46,12 @@ class SimpleFunctionsTest(unittest.TestCase):
     def test_process_source_datasets_given_valid_data(self, grab_mock):
         gen = InterleaveVDSGeneratorTester(files=["stripe_1.h5", "stripe_2.h5"])
         expected_source = vdsgenerator.SourceMeta(
-            frames=10, height=256, width=2048, dtype="uint16")
+            frames=(5, 5), height=256, width=2048, dtype="uint16")
 
         source = gen.process_source_datasets()
 
         grab_mock.assert_has_calls([call("stripe_1.h5"), call("stripe_2.h5")])
         self.assertEqual(expected_source, source)
-        self.assertEqual(10, gen.total_frames)
 
     @patch(VDSGenerator_patch_path + '.grab_metadata',
            side_effect=[
@@ -74,12 +73,11 @@ class SimpleFunctionsTest(unittest.TestCase):
     def test_create_virtual_layout(self, layout_mock, source_mock, file_mock):
         gen = InterleaveVDSGeneratorTester(
             output_file="/test/path/vds.hdf5",
-            stripe_spacing=10, module_spacing=100,
             target_node="full_frame", source_node="data",
-            files=["raw.hdf5"] * 2, name="vds.hdf5", shape=(5, 1586, 2048),
+            files=["raw1.h5", "raw2.h5"], name="vds.hdf5", shape=(5, 1586, 2048),
             total_frames=10, block_size=1)
         source = vdsgenerator.SourceMeta(
-            frames=(5,), height=256, width=2048, dtype="uint16")
+            frames=(3, 2), height=256, width=2048, dtype="uint16")
         dataset_mock = MagicMock()
         self.file_mock.reset_mock()
         vds_file_mock = self.file_mock.__enter__.return_value
@@ -87,7 +85,9 @@ class SimpleFunctionsTest(unittest.TestCase):
 
         layout = gen.create_virtual_layout(source)
 
-        layout_mock.assert_called_once_with((10, 256, 2048), "uint16")
-        source_mock.assert_has_calls([call(dataset_mock)] * 2,
-                                     any_order=True)
+        layout_mock.assert_called_once_with((5, 256, 2048), "uint16")
+        source_mock.assert_has_calls(
+            [call("raw1.h5", dtype="uint16", name="data", shape=(3, 256, 2048)),
+             call("raw2.h5", dtype="uint16", name="data", shape=(2, 256, 2048))],
+            any_order=True)
         # TODO: Pass numpy arrays to check slicing

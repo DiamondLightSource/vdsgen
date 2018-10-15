@@ -101,6 +101,8 @@ class SubFrameVDSGenerator(VDSGenerator):
             list(VirtualMap): Maps describing links between raw data and VDS
 
         """
+        source_shape = source_meta.frames + \
+            (source_meta.height, source_meta.width)
         spacing = self.construct_vds_spacing()
         target_height = source_meta.height * len(self.files) + sum(spacing)
         target_shape = source_meta.frames + (target_height,
@@ -113,8 +115,10 @@ class SubFrameVDSGenerator(VDSGenerator):
 
         current_position = 0
         for stripe_idx, file_path in enumerate(self.files):
-            with h5.File(file_path) as source_file:
-                v_source = h5.VirtualSource(source_file[self.source_node])
+            v_source = h5.VirtualSource(
+                file_path,
+                name="data", shape=source_shape, dtype=source_meta.dtype
+            )
 
             start = current_position
             end = start + source_meta.height

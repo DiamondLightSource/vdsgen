@@ -46,16 +46,16 @@ class InterleaveVDSGenerator(VDSGenerator):
 
         """
         data = self.grab_metadata(self.files[0])
-        self.total_frames = data["frames"][0]
+        frames = [data["frames"][0]]
         for dataset in self.files[1:]:
             temp_data = self.grab_metadata(dataset)
-            self.total_frames += temp_data["frames"][0]
+            frames.append(temp_data["frames"][0])
             for attribute, value in data.items():
                 if attribute != "frames" and temp_data[attribute] != value:
                     raise ValueError("Files have mismatched "
                                      "{}".format(attribute))
 
-        source = SourceMeta(frames=self.total_frames,
+        source = SourceMeta(frames=tuple(frames),
                             height=data['height'], width=data['width'],
                             dtype=data['dtype'])
 
@@ -63,8 +63,21 @@ class InterleaveVDSGenerator(VDSGenerator):
                           "  Frames: %s\n"
                           "  Height: %s\n"
                           "  Width: %s\n"
-                          "  Data Type: %s", self.total_frames, *source[1:])
+                          "  Data Type: %s", frames, *source[1:])
         return source
+
+    def process_source_metadata(self, source):
+        frames, height, width = self.parse_shape(source["shape"])
+        if not isinstance(frames[0], tuple):
+            raise ValueError(
+                "For InterleaveVDSGenerator, source.shape.frames must be a "
+                "tuple of the number of frames in each raw file."
+            )
+        source_metadata = SourceMeta(
+            frames=frames[0], height=height, width=width,
+            dtype=source["dtype"])
+
+        return source_metadata
 
     def create_virtual_layout(self, source_meta):
         """Create a VirtualLayout mapping raw data to the VDS.
@@ -76,7 +89,8 @@ class InterleaveVDSGenerator(VDSGenerator):
             VirtualLayout: Object describing links between raw data and VDS
 
         """
-        target_shape = (self.total_frames,) + \
+        total_frames = sum(source_meta.frames)
+        target_shape = (total_frames,) + \
                        (source_meta.height, source_meta.width)
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", target_shape)
@@ -85,8 +99,12 @@ class InterleaveVDSGenerator(VDSGenerator):
 
         total_files = len(self.files)
         for file_idx, file_path in enumerate(self.files):
-            with h5.File(file_path) as source_file:
-                v_source = h5.VirtualSource(source_file[self.source_node])
+            source_shape = (source_meta.frames[file_idx],) + \
+                (source_meta.height, source_meta.width)
+            v_source = h5.VirtualSource(
+                file_path,
+                name="data", shape=source_shape, dtype=source_meta.dtype
+            )
             dataset_frames = v_source.shape[0]
 
             for frame_idx in range(0, dataset_frames, self.block_size):
@@ -111,12 +129,12 @@ class InterleaveVDSGenerator(VDSGenerator):
                 source_hyperslab = v_source[source_start: source_end, :, :]
 
                 target_start = self.block_size * target_block_idx
-                if target_start + block_size > self.total_frames:
+                if target_start + block_size > total_frames:
                     raise RuntimeError(
                         "Cannot map dataset %d of %d [%d frames] "
                         "to vds [%d frames] with blocks sized %d" %
                         (self.files.index(file_path) + 1, len(self.files),
-                         dataset_frames, self.total_frames, self.block_size))
+                         dataset_frames, total_frames, self.block_size))
                 target_end = target_start + block_size
 
                 # Hyperslab: Frame[block_start_idx, block_end_idx + 1],

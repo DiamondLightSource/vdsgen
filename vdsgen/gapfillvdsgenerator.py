@@ -96,8 +96,13 @@ class GapFillVDSGenerator(VDSGenerator):
                           "  Shape: %s\n", target_shape)
 
         v_layout = h5.VirtualLayout(target_shape, source_meta.dtype)
-        with h5.File(self.source_file) as source_file:
-            v_source = h5.VirtualSource(source_file[self.source_node])
+
+        source_shape = source_meta.frames + \
+            (source_meta.height, source_meta.width)
+        v_source = h5.VirtualSource(
+            self.source_file,
+            name="data", shape=source_shape, dtype=source_meta.dtype
+        )
 
         y_current = 0
         for row_idx in range(self.grid_y):

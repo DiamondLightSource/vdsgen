@@ -85,7 +85,9 @@ class SimpleFunctionsTest(unittest.TestCase):
             output_file="/test/path/vds.hdf5",
             stripe_spacing=10, module_spacing=100,
             target_node="full_frame", source_node="data",
-            files=["raw.hdf5"] * 6, name="vds.hdf5")
+            files=["raw1.h5", "raw2.h5", "raw3.h5",
+                   "raw4.h5", "raw5.h5", "raw6.h5"],
+            name="vds.hdf5")
         source = vdsgenerator.SourceMeta(
             frames=(3,), height=256, width=2048, dtype="uint16")
         dataset_mock = MagicMock()
@@ -96,5 +98,8 @@ class SimpleFunctionsTest(unittest.TestCase):
         layout = gen.create_virtual_layout(source)
 
         layout_mock.assert_called_once_with((3, 1766, 2048), "uint16")
-        source_mock.assert_has_calls([call(dataset_mock)] * 5)
+        source_mock.assert_has_calls(
+            [call("raw{}.h5".format(x),
+                  dtype="uint16", name="data", shape=(3, 256, 2048))
+             for x in range(1, 7)])
         # TODO: Pass numpy arrays to check slicing
