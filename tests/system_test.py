@@ -10,6 +10,7 @@ import h5py as h5
 
 from vdsgen import SubFrameVDSGenerator, InterleaveVDSGenerator, \
     ExcaliburGapFillVDSGenerator, ReshapeVDSGenerator, generate_raw_files
+from vdsgen.interleavevdsgenerator import InterleaveVDSGenerator2
 
 
 def create_pixel_pattern(top_value, bottom_value,
@@ -74,7 +75,7 @@ class SystemTest(TestCase):
                 os.remove(file_)
 
     def test_interleave(self):
-        FRAMES = 95
+        FRAMES = 100
         WIDTH = 2048
         HEIGHT = 1536
         # Generate 4 raw files with interspersed frames
@@ -83,7 +84,7 @@ class SystemTest(TestCase):
         generate_raw_files("OD", FRAMES, 4, 10, WIDTH, HEIGHT, "test_data")
         print("Creating VDS...")
         with Timer() as t:
-            gen = InterleaveVDSGenerator(
+            gen = InterleaveVDSGenerator2(
                 "./", prefix="OD_", block_size=10, log_level=1,
                 source_node="test_data"
             )
@@ -149,6 +150,35 @@ class SystemTest(TestCase):
 
         time_dataset_open("OD_vds.h5")
         time_read_frame("OD_vds.h5")
+
+        start = timer()
+        with h5.File("OD_vds.h5", mode="r") as h5_file:
+            dset = h5_file["data"]
+        end = timer()
+        print("Dataset open time: {}".format(end - start))
+
+    def test_interleave2_speed(self):
+        FILES = 4
+        FRAMES = 1000000
+        WIDTH = 2048
+        HEIGHT = 1536
+        print("Creating VDS...")
+        start = timer()
+        gen = InterleaveVDSGenerator2(
+            "./", files=["OD_{}.h5".format(idx) for idx in range(FILES)],
+            source=dict(shape=((FRAMES / FILES,) * FILES, HEIGHT, WIDTH),
+                        dtype="float32"),
+            block_size=1, log_level=1
+        )
+        gen.generate_vds()
+        end = timer()
+        print("Interleave {} frames - Time: {}".format(FRAMES, end - start))
+
+        start = timer()
+        with h5.File("OD_vds.h5", mode="r") as h5_file:
+            dset = h5_file["data"]
+        end = timer()
+        print("Dataset open time: {}".format(end - start))
 
     def test_sub_frames(self):
         FRAMES = 1
