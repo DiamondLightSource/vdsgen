@@ -3,6 +3,7 @@
 import h5py as h5
 
 from .vdsgenerator import VDSGenerator, SourceMeta
+from vds import AdvancedVirtualLayout
 
 
 class InterleaveVDSGenerator(VDSGenerator):
@@ -145,5 +146,50 @@ class InterleaveVDSGenerator(VDSGenerator):
                     "Mapping %s[%s:%s, :, :] to %s[%s:%s, :, :].",
                     self.name, target_start, target_end,
                     file_path.split("/")[-1], source_start, source_end)
+
+        return v_layout
+
+
+class InterleaveVDSGenerator2(InterleaveVDSGenerator):
+
+    def create_virtual_layout(self, source_meta):
+        """Create a VirtualLayout mapping raw data to the VDS.
+
+        Args:
+            source_meta(SourceMeta): Source attributes
+
+        Returns:
+            VirtualLayout: Object describing links between raw data and VDS
+
+        """
+        total_frames = sum(source_meta.frames)
+        target_shape = (total_frames,) + \
+                       (source_meta.height, source_meta.width)
+        self.logger.debug("VDS metadata:\n"
+                          "  Shape: %s\n", target_shape)
+
+        v_layout = AdvancedVirtualLayout(target_shape, source_meta.dtype)
+
+        total_files = len(self.files)
+        for file_idx, file_path in enumerate(self.files):
+            source_shape = (source_meta.frames[file_idx],) + \
+                (source_meta.height, source_meta.width)
+            v_source = h5.VirtualSource(
+                file_path,
+                name="data", shape=source_shape, dtype=source_meta.dtype
+            )
+            dataset_frames = v_source.shape[0]
+
+            start = file_idx * self.block_size
+            count = dataset_frames / self.block_size
+            stride = total_files * self.block_size
+            block = self.block_size
+
+            v_layout[(start, count, stride, block), :, :] = v_source
+
+            self.logger.debug(
+                "Mapping %s[%s:%s:%s:%s :, :] to %s[...].",
+                self.name, start, count, stride, block,
+                file_path.split("/")[-1])
 
         return v_layout

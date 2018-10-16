@@ -45,7 +45,8 @@ def generate_raw_files(prefix, frames, files, block_size, x_dim, y_dim):
         with h5py.File(prefix + "_{}.h5".format(file_idx)) as f:
             f.create_dataset("data",
                              shape=(len(values[file_idx]),
-                                    y_dim, x_dim))
+                                    y_dim, x_dim),
+                             chunks=(1, y_dim, x_dim))
             for idx, value in enumerate(file_values):
                 f["data"][idx] = np.full((y_dim, x_dim),
                                          value, dtype="int8")
