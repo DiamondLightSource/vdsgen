@@ -251,7 +251,7 @@ class SystemTest(TestCase):
                 row += 256 + spacing
 
     def test_reshape(self):
-        FRAMES = 100
+        FRAMES = 60
         SHAPE = (5, 4, 3)
         # Generate a single file with 100 2048x1536 frames
         print("Creating raw files...")
@@ -263,10 +263,10 @@ class SystemTest(TestCase):
         )
         gen.generate_vds()
 
-        self._validate_reshape(SHAPE, FRAMES)
+        self._validate_reshape(FRAMES)
 
     def test_reshape_empty(self):
-        FRAMES = 100
+        FRAMES = 60
         SHAPE = (5, 4, 3)
         WIDTH = 2048
         HEIGHT = 1536
@@ -281,11 +281,11 @@ class SystemTest(TestCase):
         print("Creating raw files...")
         generate_raw_files("raw", FRAMES, 1, 1, 2048, 1536)
 
-        self._validate_reshape(SHAPE, FRAMES)
+        self._validate_reshape(FRAMES)
 
     def test_reshape_speed(self):
         FRAMES = 1000000
-        SHAPE = (500, 20, 10)
+        SHAPE = (500, 200, 10)
         WIDTH = 2048
         HEIGHT = 1536
         start = timer()
@@ -299,23 +299,19 @@ class SystemTest(TestCase):
         end = timer()
         print("Reshape {} -> {} - Time: {}".format(FRAMES, SHAPE, end - start))
 
-    def _validate_reshape(self, shape, frames):
+        start = timer()
+        with h5.File("reshaped.h5", mode="r") as h5_file:
+            dset = h5_file["data"]
+        end = timer()
+        print("Dataset open time: {}".format(end - start))
+
+    def _validate_reshape(self, frames):
         print("Opening VDS...")
         with h5.File("reshaped.h5", mode="r") as h5_file:
             vds_dataset = h5_file["data"]
 
             print("Verifying dataset...")
-            # Check first pixel of each frame
-            print("0 %", end="")
-            frame_idx = 0
-            for i in range(shape[0]):
-                for j in range(shape[1]):
-                    for k in range(shape[2]):
-                        self.assertEqual(vds_dataset[i][j][k][0][0],
-                                         1.0 * frame_idx)
-                        progress = int((frame_idx + 1) *
-                                       (1.0 / frames * 100))
-                        print("\r{} %".format(progress), end="")
-                        sys.stdout.flush()
-                        frame_idx += 1
-            print()
+            np.testing.assert_array_equal(
+                np.array(range(frames)),
+                vds_dataset[:, :, :, 0, 0].flatten()
+            )
