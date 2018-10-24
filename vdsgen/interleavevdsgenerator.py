@@ -3,7 +3,6 @@
 import h5py as h5
 
 from .vdsgenerator import VDSGenerator, SourceMeta
-from vds import AdvancedVirtualLayout
 
 
 class InterleaveVDSGenerator(VDSGenerator):
@@ -167,7 +166,7 @@ class InterleaveVDSGenerator2(InterleaveVDSGenerator):
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", target_shape)
 
-        v_layout = AdvancedVirtualLayout(target_shape, source_meta.dtype)
+        v_layout = h5.VirtualLayout(target_shape, source_meta.dtype)
 
         total_files = len(self.files)
         for file_idx, file_path in enumerate(self.files):
