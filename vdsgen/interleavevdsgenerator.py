@@ -102,8 +102,8 @@ class InterleaveVDSGenerator(VDSGenerator):
             source_shape = (source_meta.frames[file_idx],) + \
                 (source_meta.height, source_meta.width)
             v_source = h5.VirtualSource(
-                file_path,
-                name="data", shape=source_shape, dtype=source_meta.dtype
+                file_path, name=self.source_node,
+                shape=source_shape, dtype=source_meta.dtype
             )
             dataset_frames = v_source.shape[0]
 

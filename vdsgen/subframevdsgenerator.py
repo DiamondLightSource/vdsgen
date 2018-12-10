@@ -116,8 +116,8 @@ class SubFrameVDSGenerator(VDSGenerator):
         current_position = 0
         for stripe_idx, file_path in enumerate(self.files):
             v_source = h5.VirtualSource(
-                file_path,
-                name="data", shape=source_shape, dtype=source_meta.dtype
+                file_path, name=self.source_node,
+                shape=source_shape, dtype=source_meta.dtype
             )
 
             start = current_position

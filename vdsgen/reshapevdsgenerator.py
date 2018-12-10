@@ -80,8 +80,8 @@ class ReshapeVDSGenerator(VDSGenerator):
         source_shape = source_meta.frames + \
             (source_meta.height, source_meta.width)
         v_source = h5.VirtualSource(
-            self.source_file,
-            name="data", shape=source_shape, dtype=source_meta.dtype
+            self.source_file, name=self.source_node,
+            shape=source_shape, dtype=source_meta.dtype
         )
 
         v_layout[...] = v_source
