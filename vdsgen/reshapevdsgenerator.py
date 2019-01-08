@@ -72,6 +72,14 @@ class ReshapeVDSGenerator(VDSGenerator):
             VirtualLayout: Object describing links between raw data and VDS
 
         """
+        if source_meta.frames[0] != self.product(self.dimensions):
+            raise ValueError(
+                "Length of source frames ({}) does no match target shape "
+                "[{}] ({}))".format(
+                    source_meta.frames[0],
+                    ", ".join(str(d) for d in self.dimensions),
+                    self.product(self.dimensions))
+            )
         vds_shape = self.dimensions + (source_meta.height, source_meta.width)
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", vds_shape)

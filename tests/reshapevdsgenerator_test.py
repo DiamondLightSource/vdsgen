@@ -90,7 +90,7 @@ class SimpleFunctionsTest(unittest.TestCase):
             target_node="full_frame", source_node="data",
             source_file="raw.h5", name="vds.hdf5")
         source = vdsgenerator.SourceMeta(
-            frames=(3,), height=256, width=2048, dtype="uint16")
+            frames=(150,), height=256, width=2048, dtype="uint16")
         dataset_mock = MagicMock()
         self.file_mock.reset_mock()
         vds_file_mock = self.file_mock.__enter__.return_value
@@ -100,5 +100,17 @@ class SimpleFunctionsTest(unittest.TestCase):
 
         layout_mock.assert_called_once_with((5, 3, 10, 256, 2048), "uint16")
         source_mock.assert_called_once_with(
-            "raw.h5", dtype="uint16", name="data", shape=(3, 256, 2048)
+            "raw.h5", dtype="uint16", name="data", shape=(150, 256, 2048)
         )
+
+    def test_create_virtual_layout_frame_mismatch(self):
+        gen = ReshapeVDSGeneratorTester(
+            output_file="/test/path/vds.hdf5",
+            dimensions=(5, 3, 10), alternate=None, periods=[], radices=(30, 10),
+            target_node="full_frame", source_node="data",
+            source_file="raw.h5", name="vds.hdf5")
+        source = vdsgenerator.SourceMeta(
+            frames=(3,), height=256, width=2048, dtype="uint16")
+
+        with self.assertRaises(ValueError):
+            gen.create_virtual_layout(source)
