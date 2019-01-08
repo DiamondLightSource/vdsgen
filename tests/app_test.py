@@ -10,6 +10,8 @@ InterleaveVDSGenerator_patch_path = app_patch_path + ".InterleaveVDSGenerator"
 SubFrameVDSGenerator_patch_path = app_patch_path + ".SubFrameVDSGenerator"
 ExcaliburGapFillVDSGenerator_patch_path = app_patch_path + \
                                           ".ExcaliburGapFillVDSGenerator"
+ReshapeVDSGenerator_patch_path = app_patch_path + \
+                                 ".ReshapeVDSGenerator"
 
 
 class ParseArgsTest(unittest.TestCase):
@@ -126,3 +128,25 @@ class MainTest(unittest.TestCase):
             module_spacing=args_mock.module_spacing,
             fill_value=args_mock.fill_value,
             log_level=args_mock.log_level)
+
+    @patch(ReshapeVDSGenerator_patch_path)
+    @patch(app_patch_path + '.parse_args',
+           return_value=MagicMock(mode="reshape", empty=False))
+    def test_main_reshape(self, parse_mock, init_mock):
+        args_mock = parse_mock.return_value
+
+        app.main()
+
+        parse_mock.assert_called_once_with()
+        init_mock.assert_called_once_with(
+            tuple(args_mock.new_shape),
+            args_mock.path,
+            prefix=args_mock.prefix, files=args_mock.files,
+            output=args_mock.output,
+            source=None,
+            source_node=args_mock.source_node,
+            target_node=args_mock.target_node,
+            fill_value=args_mock.fill_value,
+            log_level=args_mock.log_level,
+            alternate=args_mock.alternate
+        )

@@ -7,6 +7,7 @@ from .vdsgenerator import VDSGenerator
 from .interleavevdsgenerator import InterleaveVDSGenerator
 from .subframevdsgenerator import SubFrameVDSGenerator
 from .excaliburgapfillvdsgenerator import ExcaliburGapFillVDSGenerator
+from .reshapevdsgenerator import ReshapeVDSGenerator
 
 help_message = """
 A script to create a virtual dataset composed of multiple raw HDF5 files.
@@ -44,7 +45,10 @@ def parse_args():
         help="Explicit names of raw files in <path>.")
 
     # Arguments required to allow VDS to be created before raw files exist
-    empty_vds = parser.add_argument_group()
+    empty_vds = parser.add_argument_group(
+        "Arguments required to describe the source dataset(s) when --empty is "
+        "used"
+    )
     empty_vds.add_argument(
         "-e", "--empty", action="store_true", dest="empty",
         help="Make empty VDS pointing to datasets that don't exist yet.")
@@ -57,17 +61,20 @@ def parse_args():
         help="Data type of raw datasets.")
 
     # Arguments related to the mode used
-    mode_args = parser.add_argument_group()
+    mode_args = parser.add_argument_group(
+        "Arguments that only take effect in certain modes"
+    )
     mode_args.add_argument(
         "--mode", type=str, dest="mode", default="sub-frames",
-        choices=["sub-frames", "interleave", "gap-fill"],
-        help="Type of VDS to create\n"
+        choices=["sub-frames", "interleave", "gap-fill", "reshape"],
+        help="Type of VDS to create and expected input dataset(s)\n"
              "  sub-frames:    ND datasets containing sub-frames of full "
              "images\n"
              "  interleave:    1D datasets containing interspersed blocks of "
              "frames\n"
              "  gap-fill:      Single ND raw full-frame excalibur dataset to "
-             "insert gaps into\n")
+             "insert gaps into\n"
+             "  reshape:       Single 1D dataset to reshape\n")
     mode_args.add_argument(
         "-s", "--stripe-spacing", type=int, dest="stripe_spacing", default=3,
         help="Spacing between two stripes in an Excalibur module. "
@@ -82,6 +89,13 @@ def parse_args():
     mode_args.add_argument(
         "-b", "--block-size", type=int, dest="block_size", default=1,
         help="Size of blocks of contiguous frames. [interleave]")
+    mode_args.add_argument(
+        "-S", "--new-shape", type=int, dest="new_shape", nargs="*",
+        help="Shape to map 1D dataset into. [reshape]")
+    mode_args.add_argument(
+        "-A", "--alternate", type=bool, dest="alternate", nargs="*",
+        help="Whether each axis alternates. List of True/False for each axis. "
+             "[reshape]")
 
     # Arguments that always apply
     other_args = parser.add_argument_group()
@@ -116,6 +130,8 @@ def parse_args():
     if args.files is not None:
         if args.mode == "gap-fill" and len(args.files) != 1:
             parser.error("Gap fill can only operate on a single dataset.")
+    if args.mode == "reshape" and args.new_shape is None:
+        parser.error("Must provide --new-shape for reshape mode")
 
     return args
 
@@ -169,9 +185,23 @@ def main():
             fill_value=args.fill_value,
             log_level=args.log_level
         )
+    elif args.mode == "reshape":
+        gen = ReshapeVDSGenerator(
+            tuple(args.new_shape),
+            args.path,
+            prefix=args.prefix, files=args.files,
+            output=args.output,
+            source=source_metadata,
+            source_node=args.source_node,
+            target_node=args.target_node,
+            fill_value=args.fill_value,
+            log_level=args.log_level,
+            alternate=args.alternate
+        )
     else:
         raise NotImplementedError("Invalid VDS mode. Must be frames, "
-                                  "interleave, sub-frames, or gap-fill.")
+                                  "interleave, sub-frames, gap-fill "
+                                  "or reshape.")
 
     gen.generate_vds()
 
