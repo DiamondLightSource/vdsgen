@@ -101,7 +101,7 @@ class SystemTest(TestCase):
 
     def test_interleave_speed(self):
         FILES = 4
-        FRAMES = 1000000
+        FRAMES = 10000
         WIDTH = 2048
         HEIGHT = 1536
         print("Creating VDS...")
@@ -265,6 +265,34 @@ class SystemTest(TestCase):
 
         self._validate_reshape(FRAMES)
 
+    def test_reshape_alternate(self):
+        FRAMES = 12
+        SHAPE = (4, 3)
+        # Generate a single file with 100 2048x1536 frames
+        print("Creating raw files...")
+        generate_raw_files("raw", FRAMES, 1, 1, 2048, 1536)
+        print("Creating VDS...")
+        gen = ReshapeVDSGenerator(
+            shape=SHAPE, path="./", files=["raw_0.h5"],
+            output="reshaped.h5", log_level=1,
+            alternate=(False, True)
+        )
+        gen.generate_vds()
+
+        test_dataset = np.array([0., 1., 2.,
+                                 5., 4., 3.,
+                                 6., 7., 8.,
+                                 11., 10., 9.])
+
+        with h5.File("reshaped.h5", mode="r") as h5_file:
+            vds_dataset = h5_file["data"]
+
+            print("Verifying dataset...")
+            np.testing.assert_array_equal(
+                test_dataset,
+                vds_dataset[:, :, 0, 0].flatten()
+            )
+
     def test_reshape_empty(self):
         FRAMES = 60
         SHAPE = (5, 4, 3)
@@ -294,6 +322,28 @@ class SystemTest(TestCase):
             shape=SHAPE, path="./", files=["raw_0.h5"],
             source=dict(shape=(FRAMES, HEIGHT, WIDTH), dtype="float32"),
             output="reshaped.h5", log_level=1
+        )
+        gen.generate_vds()
+        end = timer()
+        print("Reshape {} -> {} - Time: {}".format(FRAMES, SHAPE, end - start))
+
+        start = timer()
+        with h5.File("reshaped.h5", mode="r") as h5_file:
+            dset = h5_file["data"]
+        end = timer()
+        print("Dataset open time: {}".format(end - start))
+
+    def test_reshape_alternate_speed(self):
+        FRAMES = 10000
+        SHAPE = (50, 20, 10)
+        WIDTH = 2048
+        HEIGHT = 1536
+        start = timer()
+        print("Creating VDS...")
+        gen = ReshapeVDSGenerator(
+            shape=SHAPE, path="./", files=["raw_0.h5"],
+            source=dict(shape=(FRAMES, HEIGHT, WIDTH), dtype="float32"),
+            output="reshaped.h5", log_level=1, alternate=(False, True, True)
         )
         gen.generate_vds()
         end = timer()

@@ -84,6 +84,85 @@ class ReshapeVDSGenerator(VDSGenerator):
             shape=source_shape, dtype=source_meta.dtype
         )
 
-        v_layout[...] = v_source
+        if self.alternate is not None:
+            v_layout = self.create_alternating_virtual_layout(
+                vds_shape, v_source, v_layout)
+        else:
+            v_layout[...] = v_source
 
         return v_layout
+
+    def create_alternating_virtual_layout(self, shape, v_source, v_layout):
+        radices = self.create_mixed_radix_set()
+
+        # Iterate over total number of row hyperslabs to map to VDS
+        for idx in range(self.product(self.dimensions)):
+            axis_indices = self.calculate_axis_indices(idx, radices, shape)
+            # Hyperslab: Single index for each inner axis,
+            #            Full extent of outermost axis,
+            #            Full slice for height and width
+            vds_hyperslab = tuple(axis_indices +
+                                  [self.FULL_SLICE, self.FULL_SLICE])
+            v_layout[vds_hyperslab] = v_source[idx]
+
+            self.logger.debug(
+                "Mapping %s[%s, ...] to %s[%d, ...].",
+                self.name, ", ".join(str(idx) for idx in axis_indices),
+                self.source_file.split("/")[-1], idx)
+
+        return v_layout
+
+    def create_mixed_radix_set(self):
+        # Create a mixed radix set mapping any 1D index to an ND index
+        # The 1D index is a decimal number and the ND index is the equivalent
+        # representation in the mixed radix numeral system derived from shape
+        # e.g. for shape (5, 3, 10) radices = 30, 10 and 1
+        #   132 -> 412 (30*4 + 10*1 + 1*2) so [132] in 1D -> [4, 1, 2] in 3D
+        radices = [1]  # Smallest radix is always worth 1 in decimal
+        for axis_length in reversed(self.dimensions[1:]):
+            radices.insert(0, radices[0] * axis_length)
+        return tuple(radices)
+
+    @staticmethod
+    def product(iterable):
+        """Calculate product of elements of an iterable.
+
+        Args:
+            iterable: An object capable of returning its members one at a time.
+                Must have at least on element.
+
+        Returns:
+            int: Product
+
+        """
+        product = 1
+        for value in iterable:
+            product *= value
+        return product
+
+    def calculate_axis_indices(self, frame_index, radices, shape):
+        """Calculate indices for each inner axis for this frame index.
+
+        Args:
+            frame_index(int): Frame index in overall dataset
+            radices(tuple): Mixed radix numeral definition
+            shape(tuple): Shape of dataset
+
+        Returns:
+            list: Indices for each individual axis
+
+        """
+        axis_indices = [0 for _ in self.dimensions]
+        for idx, radix in enumerate(radices):
+            while frame_index >= radix:
+                frame_index -= radix
+                axis_indices[idx] += 1
+
+        # Invert axis indices for axes that are alternating
+        for axis in range(1, len(self.dimensions)):
+            if self.alternate[axis] and axis_indices[axis - 1] % 2 != 0:
+                # If this axis alternates direction and the parent axis index
+                # is odd, then invert this axis index
+                axis_indices[axis] = shape[axis] - 1 - axis_indices[axis]
+
+        return axis_indices
