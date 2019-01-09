@@ -53,10 +53,11 @@ class SystemTest(TestCase):
         # Generate 4 raw files with interspersed frames
         # 95 2048x1536 frames, between 4 files in blocks of 10
         print("Creating raw files...")
-        generate_raw_files("OD", FRAMES, 4, 10, WIDTH, HEIGHT)
+        generate_raw_files("OD", FRAMES, 4, 10, WIDTH, HEIGHT, "test_data")
         print("Creating VDS...")
         gen = InterleaveVDSGenerator(
-            "./", prefix="OD_", block_size=10, log_level=1
+            "./", prefix="OD_", block_size=10, log_level=1,
+            source_node="test_data"
         )
         gen.generate_vds()
 

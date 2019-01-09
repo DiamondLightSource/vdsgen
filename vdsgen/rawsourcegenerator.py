@@ -23,11 +23,15 @@ def parse_args():
     parser.add_argument(
         "y_dim", type=int, default=100,
         help="Height of frame")
+    parser.add_argument(
+        "dset", type=str, default="data",
+        help="Dataset name")
 
     return parser.parse_args()
 
 
-def generate_raw_files(prefix, frames, files, block_size, x_dim, y_dim):
+def generate_raw_files(prefix, frames, files, block_size, x_dim, y_dim,
+                       dset="data"):
 
     values = []
     for _ in range(files):
@@ -43,12 +47,12 @@ def generate_raw_files(prefix, frames, files, block_size, x_dim, y_dim):
 
     for file_idx, file_values in enumerate(values):
         with h5py.File(prefix + "_{}.h5".format(file_idx)) as f:
-            f.create_dataset("data",
+            f.create_dataset(dset,
                              shape=(len(values[file_idx]),
                                     y_dim, x_dim))
             for idx, value in enumerate(file_values):
-                f["data"][idx] = np.full((y_dim, x_dim),
-                                         value, dtype="int8")
+                f[dset][idx] = np.full((y_dim, x_dim),
+                                        value, dtype="int8")
 
 
 def main():
@@ -56,7 +60,7 @@ def main():
     args = parse_args()
 
     generate_raw_files(args.prefix, args.files, args.frames, args.block_size,
-                       args.x_dim, args.y_dim)
+                       args.x_dim, args.y_dim, args.dset)
 
 
 if __name__ == "__main__":
