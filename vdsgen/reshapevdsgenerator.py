@@ -4,7 +4,7 @@ import logging
 
 import h5py as h5
 
-from vdsgenerator import VDSGenerator, SourceMeta
+from .vdsgenerator import VDSGenerator, SourceMeta
 
 
 class ReshapeVDSGenerator(VDSGenerator):

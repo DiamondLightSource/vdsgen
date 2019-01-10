@@ -33,7 +33,6 @@ class FrameVDSGeneratorInitTest(unittest.TestCase):
     def test_super_called(self, super_mock):
         gen = InterleaveVDSGenerator("/test/path", prefix="stripe_")
 
-        self.assertEqual(0, gen.total_frames)
         super_mock.assert_called_once_with("/test/path", "stripe_",
                                            *[None]*7)
 
@@ -68,14 +67,16 @@ class SimpleFunctionsTest(unittest.TestCase):
     file_mock = MagicMock()
 
     @patch(h5py_patch_path + '.File', return_value=file_mock)
-    @patch(h5py_patch_path + '.VirtualSource')
+    @patch(h5py_patch_path + '.VirtualSource',
+           side_effect=[MagicMock(shape=(3, 256, 2048)),
+                        MagicMock(shape=(2, 256, 2048))])
     @patch(h5py_patch_path + '.VirtualLayout')
     def test_create_virtual_layout(self, layout_mock, source_mock, file_mock):
         gen = InterleaveVDSGeneratorTester(
             output_file="/test/path/vds.hdf5",
             target_node="full_frame", source_node="data",
-            files=["raw1.h5", "raw2.h5"], name="vds.hdf5", shape=(5, 1586, 2048),
-            total_frames=10, block_size=1)
+            files=["raw1.h5", "raw2.h5"], name="vds.hdf5",
+            block_size=1)
         source = vdsgenerator.SourceMeta(
             frames=(3, 2), height=256, width=2048, dtype="uint16")
         dataset_mock = MagicMock()

@@ -109,7 +109,7 @@ class SystemTest(TestCase):
         start = timer()
         gen = InterleaveVDSGenerator(
             "./", files=["OD_{}.h5".format(idx) for idx in range(FILES)],
-            source=dict(shape=((FRAMES / FILES,) * FILES, HEIGHT, WIDTH),
+            source=dict(shape=((FRAMES // FILES,) * FILES, HEIGHT, WIDTH),
                         dtype="float32"),
             block_size=10, log_level=1
         )

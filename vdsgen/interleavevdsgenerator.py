@@ -31,7 +31,6 @@ class InterleaveVDSGenerator(VDSGenerator):
 
         """
         self.block_size = block_size
-        self.total_frames = 0
 
         super(InterleaveVDSGenerator, self).__init__(
             path, prefix, files, output, source, source_node, target_node,
