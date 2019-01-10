@@ -1,10 +1,10 @@
-VDSGen
+vdsgen
 ======
 
 A command line tool for creating virtual dataset HDF5 files from a set of HDF5 files.
 
 
-    |Build Status|  |Coverage Status|  |Code Health|
+    |Build Status|  |Coverage Status|  |Code Health|  |PyPI|
 
 .. |Build Status| image:: https://api.travis-ci.org/dls-controls/vds-gen.svg
     :target: https://travis-ci.org/dls-controls/vds-gen
@@ -12,3 +12,6 @@ A command line tool for creating virtual dataset HDF5 files from a set of HDF5 f
     :target: https://coveralls.io/github/dls-controls/vds-gen?branch=master
 .. |Code Health| image:: https://landscape.io/github/dls-controls/vds-gen/master/landscape.svg?style=flat
     :target: https://landscape.io/github/dls-controls/vds-gen/master
+.. |PyPI| image:: https://img.shields.io/pypi/v/vdsgen.svg
+    :target: https://pypi.python.org/pypi/vdsgen/
+    :alt: Latest PyPI version
