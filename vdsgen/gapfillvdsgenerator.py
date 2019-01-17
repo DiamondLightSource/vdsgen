@@ -145,3 +145,67 @@ class GapFillVDSGenerator(VDSGenerator):
                     y_start, y_stop, x_start, x_stop)
 
         return v_layout
+
+
+class GapFillVDSGenerator2(GapFillVDSGenerator):
+
+    def create_virtual_layout(self, source_meta):
+        """Create a VirtualLayout mapping raw data to the VDS.
+
+        Args:
+            source_meta(SourceMeta): Source attributes
+
+        Returns:
+            VirtualLayout: Object describing links between raw data and VDS
+
+        """
+        x_spacing, y_spacing = self.construct_vds_spacing()
+
+        target_shape = source_meta.frames + \
+            (source_meta.height + sum(y_spacing),
+             source_meta.width + sum(x_spacing))
+        self.logger.debug("VDS metadata:\n"
+                          "  Shape: %s\n", target_shape)
+
+        v_layout = h5.VirtualLayout(target_shape, source_meta.dtype)
+
+        source_shape = source_meta.frames + \
+            (source_meta.height, source_meta.width)
+        v_source = h5.VirtualSource(
+            self.source_file, name=self.source_node,
+            shape=source_shape, dtype=source_meta.dtype
+        )
+
+        map_frames = max(source_meta.frames[0] // 100, 1)
+        for map_idx, _ in enumerate(range(0, source_meta.frames[0], map_frames)):
+            frame_start = map_idx * map_frames
+            frame_end = min(frame_start + map_frames, source_meta.frames[0])
+            y_current = 0
+            for module_idx in range(self.grid_y / 2):
+                y_start = y_current
+                y_stop = y_start + self.sub_height * 2 + y_spacing[0]
+                y_current = y_stop + y_spacing[1]
+
+                source_y_start = self.sub_height * module_idx * 2
+                source_y_end = source_y_start + self.sub_height * 2
+
+                # Hyperslab: All frames,
+                #            Height bounds of module,
+                #            Full width
+                source_hyperslab = v_source[frame_start:frame_end, source_y_start:source_y_end, :]
+
+                # Hyperslab: All frames,
+                #            Selection of chips with vertical gaps,
+                #            Selection of chips with horizontal gaps
+                v_layout[
+                    frame_start:frame_end,
+                    h5.h5slice(y_start, 2, self.sub_height + y_spacing[0], self.sub_height),
+                    h5.h5slice(0, 8, self.sub_width + x_spacing[0], self.sub_width)
+                ] = source_hyperslab
+
+                self.logger.debug(
+                    "Mapping %s[%s:%s, %s:%s, :] to %s[%s:%s, %s:%s, :].",
+                    self.name, frame_start, frame_end, source_y_start, source_y_end,
+                    self.source_file.split("/")[-1], frame_start, frame_end, y_start, y_stop)
+
+        return v_layout

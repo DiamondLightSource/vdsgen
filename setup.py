@@ -4,7 +4,7 @@ MODULE_NAME = "vdsgen"
 
 setup(
     name=MODULE_NAME,
-    version='0.4',
+    version='0.5',
     description='Creates virtual dataset HDF5 files',
     long_description=open("README.rst").read(),
     url='https://github.com/dls-controls/vds-gen',

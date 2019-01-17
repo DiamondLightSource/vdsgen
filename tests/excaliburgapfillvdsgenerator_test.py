@@ -7,7 +7,7 @@ from vdsgen import vdsgenerator
 from vdsgen.excaliburgapfillvdsgenerator import ExcaliburGapFillVDSGenerator
 
 vdsgen_patch_path = "vdsgen.excaliburgapfillvdsgenerator"
-GapFillVDSGenerator_patch_path = vdsgen_patch_path + ".GapFillVDSGenerator"
+GapFillVDSGenerator_patch_path = vdsgen_patch_path + ".GapFillVDSGenerator2"
 h5py_patch_path = "h5py"
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "h5py"))

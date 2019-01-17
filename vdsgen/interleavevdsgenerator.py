@@ -174,20 +174,35 @@ class InterleaveVDSGenerator2(InterleaveVDSGenerator):
                 (source_meta.height, source_meta.width)
             v_source = h5.VirtualSource(
                 file_path,
-                name="data", shape=source_shape, dtype=source_meta.dtype
+                name=self.source_node, shape=source_shape, dtype=source_meta.dtype
             )
             dataset_frames = v_source.shape[0]
 
             start = file_idx * self.block_size
-            count = dataset_frames / self.block_size
+            count = dataset_frames // self.block_size
             stride = total_files * self.block_size
             block = self.block_size
 
-            v_layout[(start, count, stride, block), :, :] = v_source
+            source_end = dataset_frames
+            spare_frames = divmod(dataset_frames, self.block_size)[1]
+            if spare_frames != 0:
+                source_end -= spare_frames
+
+            v_layout[h5.h5slice(start, count, stride, block), :, :] = \
+                v_source[:source_end, :, :]
 
             self.logger.debug(
-                "Mapping %s[%s:%s:%s:%s, :, :] to %s[...].",
+                "Mapping %s[%s:%s:%s:%s, :, :] to %s[0:%s, ...]",
                 self.name, start, count, stride, block,
-                file_path.split("/")[-1])
+                file_path.split("/")[-1], source_end)
+
+            if spare_frames != 0:
+                start = total_frames - spare_frames
+                v_layout[start:, :, :] = v_source[source_end:, :, :]
+
+                self.logger.debug(
+                    "Mapping %s[%s:%s, :, :] to %s[%s:%s, ...]",
+                    self.name, start, total_frames,
+                    file_path.split("/")[-1], source_end, dataset_frames)
 
         return v_layout

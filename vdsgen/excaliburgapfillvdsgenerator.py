@@ -1,9 +1,9 @@
 """A class to generate a Virtual Dataset with gaps added to the source."""
 
-from .gapfillvdsgenerator import GapFillVDSGenerator
+from .gapfillvdsgenerator import GapFillVDSGenerator2
 
 
-class ExcaliburGapFillVDSGenerator(GapFillVDSGenerator):
+class ExcaliburGapFillVDSGenerator(GapFillVDSGenerator2):
 
     """A class to generate a Virtual Dataset with gaps added to the source."""
 
