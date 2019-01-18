@@ -31,6 +31,33 @@ def create_pixel_pattern(top_value, bottom_value,
     return np.array(pattern)
 
 
+class Timer(object):
+
+    def __enter__(self):
+        self.start = timer()
+        return self
+
+    def __exit__(self, *args):
+        self.end = timer()
+        self.interval = str(int((self.end - self.start) * 1000)) + "ms"
+
+
+def time_read_frame(file_name, dataset="data", frame=(0,)):
+    selection = frame + (slice(None), slice(None))
+    with Timer() as t:
+        with h5.File(file_name, mode="r") as h5_file:
+            dset = h5_file[dataset][selection]
+            # print(dset)
+    print("Frame open time: {}".format(t.interval))
+
+
+def time_dataset_open(file_name, dataset="data"):
+    with Timer() as t:
+        with h5.File(file_name, mode="r") as h5_file:
+            dset = h5_file[dataset]
+    print("Dataset open time: {}".format(t.interval))
+
+
 class SystemTest(TestCase):
 
     def setUp(self):
@@ -55,11 +82,15 @@ class SystemTest(TestCase):
         print("Creating raw files...")
         generate_raw_files("OD", FRAMES, 4, 10, WIDTH, HEIGHT, "test_data")
         print("Creating VDS...")
-        gen = InterleaveVDSGenerator(
-            "./", prefix="OD_", block_size=10, log_level=1,
-            source_node="test_data"
-        )
-        gen.generate_vds()
+        with Timer() as t:
+            gen = InterleaveVDSGenerator(
+                "./", prefix="OD_", block_size=10, log_level=1,
+                source_node="test_data"
+            )
+            gen.generate_vds()
+        print("Create time: {}".format(t.interval))
+
+        time_read_frame("OD_vds.h5")
 
         self._validate_interleave(FRAMES, HEIGHT, WIDTH)
 
@@ -100,22 +131,24 @@ class SystemTest(TestCase):
                 sys.stdout.flush()
             print()
 
-    def test_interleave_speed(self):
+    def test_interleave_big(self):
         FILES = 4
-        FRAMES = 10000
+        FRAMES = 1000000
         WIDTH = 2048
         HEIGHT = 1536
         print("Creating VDS...")
-        start = timer()
-        gen = InterleaveVDSGenerator(
-            "./", files=["OD_{}.h5".format(idx) for idx in range(FILES)],
-            source=dict(shape=((FRAMES // FILES,) * FILES, HEIGHT, WIDTH),
-                        dtype="float32"),
-            block_size=10, log_level=1
-        )
-        gen.generate_vds()
-        end = timer()
-        print("Interleave {} frames - Time: {}".format(FRAMES, end - start))
+        with Timer() as t:
+            gen = InterleaveVDSGenerator(
+                "./", files=["OD_{}.h5".format(idx) for idx in range(FILES)],
+                source=dict(shape=((FRAMES // FILES,) * FILES, HEIGHT, WIDTH),
+                            dtype="float32"),
+                block_size=10, log_level=1
+            )
+            gen.generate_vds()
+        print("Interleave {} frames - Time: {}".format(FRAMES, t.interval))
+
+        time_dataset_open("OD_vds.h5")
+        time_read_frame("OD_vds.h5")
 
     def test_sub_frames(self):
         FRAMES = 1
@@ -251,6 +284,23 @@ class SystemTest(TestCase):
                 column = 255
                 row += 256 + spacing
 
+    def test_gap_fill_big(self):
+        FRAMES = 100000
+        HEIGHT = 1536
+        WIDTH = 2048
+        print("Creating VDS...")
+        with Timer() as t:
+            gen = ExcaliburGapFillVDSGenerator(
+                "./", files=["raw_0.h5"],
+                source=dict(shape=(FRAMES, HEIGHT, WIDTH), dtype="float32"),
+                chip_spacing=3, module_spacing=123,
+                modules=3, output="gaps.h5", log_level=1
+            )
+            gen.generate_vds()
+        print("Gap Fill {} frames - Time: {}".format(FRAMES, t.interval))
+
+        time_read_frame("gaps.h5")
+
     def test_reshape(self):
         FRAMES = 60
         SHAPE = (5, 4, 3)
@@ -366,3 +416,114 @@ class SystemTest(TestCase):
                 np.array(range(frames)),
                 vds_dataset[:, :, :, 0, 0].flatten()
             )
+
+    def test_interleave_gap_fill_reshape(self):
+        FILES = 4
+        FRAMES = 1000
+        WIDTH = 2048
+        HEIGHT = 1536
+        print("Creating raw files...")
+        generate_raw_files("OD", FRAMES, 4, 1, WIDTH, HEIGHT)
+        print("Creating Interleave VDS...")
+        with Timer() as t:
+            gen = InterleaveVDSGenerator(
+                "./", files=["OD_{}.h5".format(idx) for idx in range(FILES)],
+                source=dict(shape=((FRAMES // FILES,) * FILES, HEIGHT, WIDTH),
+                            dtype="float32"),
+                block_size=1, log_level=1
+            )
+            gen.generate_vds()
+        print("Interleave {} frames - Time: {}".format(FRAMES, t.interval))
+
+        time_dataset_open("OD_vds.h5")
+        time_read_frame("OD_vds.h5")
+
+        print("Creating Gap Fill VDS...")
+        with Timer() as t:
+            gen = ExcaliburGapFillVDSGenerator(
+                "./", files=["OD_vds.h5"],
+                chip_spacing=3, module_spacing=123,
+                modules=3, output="gaps.h5", log_level=1
+            )
+            gen.generate_vds()
+        print("Gap Fill {} frames - Time: {}".format(FRAMES, t.interval))
+
+        time_dataset_open("gaps.h5")
+        time_read_frame("gaps.h5")
+
+        SHAPE = (5, 20, 10)
+        print("Creating Reshape VDS...")
+        with Timer() as t:
+            gen = ReshapeVDSGenerator(
+                shape=SHAPE, path="./", files=["gaps.h5"],
+                output="reshaped.h5", log_level=1
+            )
+            gen.generate_vds()
+        print("Reshape {} -> {} - Time: {}".format(FRAMES, SHAPE, t.interval))
+
+        time_dataset_open("reshaped.h5")
+        time_read_frame("reshaped.h5", frame=(0, 0, 0))
+        pass
+
+    def test_interleave_nest(self):
+        FILES = 4
+        FRAMES = 10000
+        WIDTH = 2048
+        HEIGHT = 1536
+        print("Creating raw files...")
+        # generate_raw_files("OD", FRAMES, 4, 1, WIDTH, HEIGHT)
+        print("Creating Interleave VDS...")
+        with Timer() as t:
+            gen = InterleaveVDSGenerator(
+                "./", files=["OD_{}.h5".format(idx) for idx in range(FILES)],
+                source=dict(shape=((2500,) * FILES, HEIGHT, WIDTH),
+                            dtype="int32"),
+                block_size=1, log_level=1
+            )
+            gen.generate_vds()
+        print("Interleave {} frames - Time: {}".format(FRAMES, t.interval))
+
+        time_dataset_open("OD_vds.h5")
+        time_read_frame("OD_vds.h5")
+
+        print("Creating second Interleave VDS...")
+        with Timer() as t:
+            gen = InterleaveVDSGenerator(
+                "./", files=["OD_vds.h5"], output="OD_vds2.h5",
+                source=dict(shape=((FRAMES,), HEIGHT, WIDTH),
+                            dtype="int32"),
+                block_size=1, log_level=1
+            )
+            gen.generate_vds()
+        print("Interleave {} frames - Time: {}".format(FRAMES, t.interval))
+
+        time_dataset_open("OD_vds2.h5")
+        time_read_frame("OD_vds2.h5")
+
+        print("Creating third Interleave VDS...")
+        with Timer() as t:
+            gen = InterleaveVDSGenerator(
+                "./", files=["OD_vds2.h5"], output="OD_vds3.h5",
+                source=dict(shape=((FRAMES,), HEIGHT, WIDTH),
+                            dtype="int32"),
+                block_size=1, log_level=1
+            )
+            gen.generate_vds()
+        print("Interleave {} frames - Time: {}".format(FRAMES, t.interval))
+
+        time_dataset_open("OD_vds3.h5")
+        time_read_frame("OD_vds3.h5")
+
+        print("Creating fourth Interleave VDS...")
+        with Timer() as t:
+            gen = InterleaveVDSGenerator(
+                "./", files=["OD_vds3.h5"], output="OD_vds4.h5",
+                source=dict(shape=((FRAMES,), HEIGHT, WIDTH),
+                            dtype="float32"),
+                block_size=1, log_level=1
+            )
+            gen.generate_vds()
+        print("Interleave {} frames - Time: {}".format(FRAMES, t.interval))
+
+        time_dataset_open("OD_vds4.h5")
+        time_read_frame("OD_vds4.h5")

@@ -52,7 +52,7 @@ def generate_raw_files(prefix, frames, files, block_size, x_dim, y_dim,
                                     y_dim, x_dim))
             for idx, value in enumerate(file_values):
                 f[dset][idx] = np.full((y_dim, x_dim),
-                                        value, dtype="int8")
+                                        value, dtype="int32")
 
 
 def main():
