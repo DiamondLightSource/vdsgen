@@ -67,10 +67,10 @@ class SimpleFunctionsTest(unittest.TestCase):
     file_mock = MagicMock()
 
     @patch(h5py_patch_path + '.File', return_value=file_mock)
-    @patch(h5py_patch_path + '.VirtualSource',
+    @patch(vdsgen_patch_path + '.VirtualSource',
            side_effect=[MagicMock(shape=(3, 256, 2048)),
                         MagicMock(shape=(2, 256, 2048))])
-    @patch(h5py_patch_path + '.VirtualLayout')
+    @patch(vdsgen_patch_path + '.VirtualLayout')
     def test_create_virtual_layout(self, layout_mock, source_mock, file_mock):
         gen = InterleaveVDSGeneratorTester(
             output_file="/test/path/vds.hdf5",

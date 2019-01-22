@@ -1,6 +1,6 @@
 """A class for generating virtual dataset frames from sub-frames."""
 
-from vds import VirtualSource, VirtualLayout, h5slice
+from .vds import VirtualSource, VirtualLayout, h5slice
 
 from .vdsgenerator import VDSGenerator, SourceMeta
 
@@ -109,7 +109,7 @@ class GapFillVDSGenerator(VDSGenerator):
             frame_start = map_idx * map_frames
             frame_end = min(frame_start + map_frames, source_meta.frames[0])
             y_current = 0
-            for module_idx in range(self.grid_y / 2):
+            for module_idx in range(self.grid_y // 2):
                 y_start = y_current
                 y_stop = y_start + self.sub_height * 2 + y_spacing[0]
                 y_current = y_stop + y_spacing[1]

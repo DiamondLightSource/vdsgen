@@ -81,8 +81,8 @@ class SimpleFunctionsTest(unittest.TestCase):
     file_mock = MagicMock()
 
     @patch(h5py_patch_path + '.File', return_value=file_mock)
-    @patch(h5py_patch_path + '.VirtualSource')
-    @patch(h5py_patch_path + '.VirtualLayout')
+    @patch(vdsgen_patch_path + '.VirtualSource')
+    @patch(vdsgen_patch_path + '.VirtualLayout')
     def test_create_virtual_layout(self, layout_mock, source_mock, file_mock):
         gen = ReshapeVDSGeneratorTester(
             output_file="/test/path/vds.hdf5",

@@ -1,6 +1,6 @@
 """A class for generating virtual dataset frames from sub-frames."""
 
-from vds import VirtualSource, VirtualLayout, h5slice
+from .vds import VirtualSource, VirtualLayout, h5slice
 from .vdsgenerator import VDSGenerator, SourceMeta
 
 

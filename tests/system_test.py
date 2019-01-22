@@ -134,7 +134,7 @@ class SystemTest(TestCase):
 
     def test_interleave_big(self):
         FILES = 4
-        FRAMES = 10000
+        FRAMES = 1000000
         WIDTH = 2048
         HEIGHT = 1536
         print("Creating VDS...")
@@ -150,29 +150,6 @@ class SystemTest(TestCase):
 
         time_dataset_open("OD_vds.h5")
         time_read_frame("OD_vds.h5")
-
-        start = timer()
-        with h5.File("OD_vds.h5", mode="r") as h5_file:
-            dset = h5_file["data"][0, :, :]
-        end = timer()
-        print("Dataset open time: {}".format(end - start))
-
-    def test_interleave2_speed(self):
-        FILES = 4
-        FRAMES = 1000000
-        WIDTH = 2048
-        HEIGHT = 1536
-        print("Creating VDS...")
-        start = timer()
-        gen = InterleaveVDSGenerator(
-            "./", files=["OD_{}.h5".format(idx) for idx in range(FILES)],
-            source=dict(shape=((FRAMES / FILES,) * FILES, HEIGHT, WIDTH),
-                        dtype="float32"),
-            block_size=1, log_level=1
-        )
-        gen.generate_vds()
-        end = timer()
-        print("Interleave {} frames - Time: {}".format(FRAMES, end - start))
 
         start = timer()
         with h5.File("OD_vds.h5", mode="r") as h5_file:

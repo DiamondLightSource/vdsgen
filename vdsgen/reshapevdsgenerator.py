@@ -2,7 +2,7 @@
 
 import logging
 
-from vds import VirtualLayout, VirtualSource, h5slice
+from .vds import VirtualLayout, VirtualSource, h5slice
 from .vdsgenerator import VDSGenerator, SourceMeta
 
 
