@@ -7,7 +7,8 @@ from vdsgen import vdsgenerator
 from vdsgen.excaliburgapfillvdsgenerator import ExcaliburGapFillVDSGenerator
 
 vdsgen_patch_path = "vdsgen.excaliburgapfillvdsgenerator"
-GapFillVDSGenerator_patch_path = vdsgen_patch_path + ".GapFillVDSGenerator2"
+gapfill_vdsgen_patch_path = "vdsgen.gapfillvdsgenerator"
+GapFillVDSGenerator_patch_path = vdsgen_patch_path + ".GapFillVDSGenerator"
 h5py_patch_path = "h5py"
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "h5py"))
@@ -72,8 +73,8 @@ class SimpleFunctionsTest(unittest.TestCase):
            '.ExcaliburGapFillVDSGenerator.construct_vds_spacing',
            return_value=([3, 3, 3, 3, 3, 3, 3, 0], [3, 123, 3, 123, 3, 0]))
     @patch(h5py_patch_path + '.File', return_value=file_mock)
-    @patch(h5py_patch_path + '.VirtualSource')
-    @patch(h5py_patch_path + '.VirtualLayout')
+    @patch(gapfill_vdsgen_patch_path + '.VirtualSource')
+    @patch(gapfill_vdsgen_patch_path + '.VirtualLayout')
     def test_create_virtual_layout(self, layout_mock, source_mock, file_mock,
                                    construct_mock):
         gen = ExcaliburGapFillVDSGeneratorTester(
