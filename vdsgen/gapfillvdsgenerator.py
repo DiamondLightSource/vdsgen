@@ -1,6 +1,6 @@
 """A class for generating virtual dataset frames from sub-frames."""
 
-import h5py as h5
+from vds import VirtualSource, VirtualLayout, h5slice
 
 from .vdsgenerator import VDSGenerator, SourceMeta
 
@@ -95,11 +95,11 @@ class GapFillVDSGenerator(VDSGenerator):
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", target_shape)
 
-        v_layout = h5.VirtualLayout(target_shape, source_meta.dtype)
+        v_layout = VirtualLayout(target_shape, source_meta.dtype)
 
         source_shape = source_meta.frames + \
             (source_meta.height, source_meta.width)
-        v_source = h5.VirtualSource(
+        v_source = VirtualSource(
             self.source_file, name=self.source_node,
             shape=source_shape, dtype=source_meta.dtype
         )
@@ -167,11 +167,11 @@ class GapFillVDSGenerator2(GapFillVDSGenerator):
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", target_shape)
 
-        v_layout = h5.VirtualLayout(target_shape, source_meta.dtype)
+        v_layout = VirtualLayout(target_shape, source_meta.dtype)
 
         source_shape = source_meta.frames + \
             (source_meta.height, source_meta.width)
-        v_source = h5.VirtualSource(
+        v_source = VirtualSource(
             self.source_file, name=self.source_node,
             shape=source_shape, dtype=source_meta.dtype
         )
@@ -199,8 +199,8 @@ class GapFillVDSGenerator2(GapFillVDSGenerator):
                 #            Selection of chips with horizontal gaps
                 v_layout[
                     frame_start:frame_end,
-                    h5.h5slice(y_start, 2, self.sub_height + y_spacing[0], self.sub_height),
-                    h5.h5slice(0, 8, self.sub_width + x_spacing[0], self.sub_width)
+                    h5slice(y_start, 2, self.sub_height + y_spacing[0], self.sub_height),
+                    h5slice(0, 8, self.sub_width + x_spacing[0], self.sub_width)
                 ] = source_hyperslab
 
                 self.logger.debug(
