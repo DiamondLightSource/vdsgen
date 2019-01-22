@@ -320,7 +320,7 @@ class SystemTest(TestCase):
         generate_raw_files("raw", FRAMES, 1, 1, 2048, 1536)
         print("Creating VDS...")
         gen = ReshapeVDSGenerator(
-            shape=SHAPE, path="./", files=["raw_0.h5"],
+            shape=SHAPE, path="./", prefix="raw_",
             output="reshaped.h5", log_level=1
         )
         gen.generate_vds()
