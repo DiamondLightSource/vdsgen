@@ -52,6 +52,15 @@ def time_read_frame(file_name, dataset="data", frame=(0,)):
     print("Frame {} open time: {}".format(frame, t.interval))
 
 
+def time_read_block(file_name, dataset="data", frame=(0,)):
+    selection = frame + (slice(None), slice(None))
+    with Timer() as t:
+        with h5.File(file_name, mode="r") as h5_file:
+            dset = h5_file[dataset][selection]
+            # print(dset)
+    print("Frame {} open time: {}".format(frame, t.interval))
+
+
 def time_dataset_open(file_name, dataset="data"):
     with Timer() as t:
         with h5.File(file_name, mode="r") as h5_file:
@@ -134,9 +143,11 @@ class SystemTest(TestCase):
 
     def test_interleave_big(self):
         FILES = 4
-        FRAMES = 1000000
+        FRAMES = 10000
         WIDTH = 2048
         HEIGHT = 1536
+        print("Creating raw files...")
+        generate_raw_files("OD", FRAMES, 4, 10, WIDTH, HEIGHT, any=True)
         print("Creating VDS...")
         with Timer() as t:
             gen = InterleaveVDSGenerator(
@@ -150,12 +161,6 @@ class SystemTest(TestCase):
 
         time_dataset_open("OD_vds.h5")
         time_read_frame("OD_vds.h5")
-
-        start = timer()
-        with h5.File("OD_vds.h5", mode="r") as h5_file:
-            dset = h5_file["data"][0, :, :]
-        end = timer()
-        print("Dataset open time: {}".format(end - start))
 
     def test_sub_frames(self):
         FRAMES = 1
@@ -241,7 +246,7 @@ class SystemTest(TestCase):
         )
         gen.generate_vds()
 
-        self._validate_gap_fill(FEMS, CHIPS)
+        self._validate_gap_fill(FRAMES, FEMS, CHIPS)
 
     def test_gap_fill_empty(self):
         FEMS = 6
@@ -261,15 +266,15 @@ class SystemTest(TestCase):
         print("Creating raw files...")
         generate_raw_files("raw", FRAMES, 1, 1, WIDTH, HEIGHT)
 
-        self._validate_gap_fill(FEMS, CHIPS)
+        self._validate_gap_fill(FRAMES, FEMS, CHIPS)
 
-    def _validate_gap_fill(self, fems, chips):
+    def _validate_gap_fill(self, frames, fems, chips):
         print("Opening VDS...")
         with h5.File("gaps.h5", mode="r") as h5_file:
             vds_dataset = h5_file["data"]
             print("Verifying dataset...")
             # Check shape
-            self.assertEqual(vds_dataset.shape, (100, 1791, 2069))
+            self.assertEqual(vds_dataset.shape, (frames, 1791, 2069))
 
             self.assertEqual(vds_dataset[0][0][0], 0.0)  # FEM 1 pixel 1
 
@@ -308,8 +313,7 @@ class SystemTest(TestCase):
             gen.generate_vds()
         print("Gap Fill {} frames - Time: {}".format(FRAMES, t.interval))
 
-        for frame in range(0, FRAMES, 500):
-            print(frame)
+        for frame in range(0, FRAMES, FRAMES // 20):
             time_read_frame("gaps.h5", frame=(frame,))
 
     def test_reshape(self):
@@ -481,7 +485,7 @@ class SystemTest(TestCase):
 
     def test_interleave_nest(self):
         FILES = 4
-        FRAMES = 1000000
+        FRAMES = 10000
         WIDTH = 2048
         HEIGHT = 1536
         print("Creating raw files...")
