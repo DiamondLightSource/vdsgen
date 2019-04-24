@@ -1,0 +1,15 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+mock = "*"
+nose = "*"
+coverage = "*"
+
+[packages]
+h5py = "==2.9.0"
+
+[requires]
+python_version = "3.7"
