@@ -331,7 +331,7 @@ class SystemTest(TestCase):
 
         self._validate_reshape(FRAMES)
 
-    def test_reshape_alternate(self):
+    def test_reshape_2d_alternate(self):
         FRAMES = 12
         SHAPE = (4, 3)
         # Generate a single file with 100 2048x1536 frames
@@ -345,10 +345,10 @@ class SystemTest(TestCase):
         )
         gen.generate_vds()
 
-        test_dataset = np.array([0., 1., 2.,
-                                 5., 4., 3.,
-                                 6., 7., 8.,
-                                 11., 10., 9.])
+        test_dataset = np.array([0, 1, 2,
+                                 5, 4, 3,
+                                 6, 7, 8,
+                                 11, 10, 9])
 
         with h5.File("reshaped.h5", mode="r") as h5_file:
             vds_dataset = h5_file["data"]
@@ -357,6 +357,123 @@ class SystemTest(TestCase):
             np.testing.assert_array_equal(
                 test_dataset,
                 vds_dataset[:, :, 0, 0].flatten()
+            )
+
+    def test_reshape_3d_alternate_outer(self):
+        FRAMES = 8
+        SHAPE = (2, 2, 2)
+        # Generate a single file with 100 2048x1536 frames
+        print("Creating raw files...")
+        generate_raw_files("raw", FRAMES, 1, 1, 2048, 1536)
+        print("Creating VDS...")
+        gen = ReshapeVDSGenerator(
+            shape=SHAPE, path="./", files=["raw_0.h5"],
+            output="reshaped.h5", log_level=1,
+            alternate=(False, True, False)
+        )
+        gen.generate_vds()
+
+        test_dataset = np.array([0, 1, 2, 3, 6, 7, 4, 5])
+
+        with h5.File("reshaped.h5", mode="r") as h5_file:
+            vds_dataset = h5_file["data"]
+
+            print("Verifying dataset...")
+            np.testing.assert_array_equal(
+                test_dataset,
+                vds_dataset[:, :, :, 0, 0].flatten()
+            )
+
+    def test_reshape_3d_alternate_inner(self):
+        FRAMES = 8
+        SHAPE = (2, 2, 2)
+        # Generate a single file with 100 2048x1536 frames
+        print("Creating raw files...")
+        generate_raw_files("raw", FRAMES, 1, 1, 2048, 1536)
+        print("Creating VDS...")
+        gen = ReshapeVDSGenerator(
+            shape=SHAPE, path="./", files=["raw_0.h5"],
+            output="reshaped.h5", log_level=1,
+            alternate=(False, False, True)
+        )
+        gen.generate_vds()
+
+        test_dataset = np.array([0, 1, 3, 2, 4, 5, 7, 6])
+
+        with h5.File("reshaped.h5", mode="r") as h5_file:
+            vds_dataset = h5_file["data"]
+
+            print("Verifying dataset...")
+            np.testing.assert_array_equal(
+                test_dataset,
+                vds_dataset[:, :, :, 0, 0].flatten()
+            )
+
+    def test_reshape_3d_alternate_both(self):
+        FRAMES = 8
+        SHAPE = (2, 2, 2)
+        # Generate a single file with 100 2048x1536 frames
+        print("Creating raw files...")
+        generate_raw_files("raw", FRAMES, 1, 1, 2048, 1536)
+        print("Creating VDS...")
+        gen = ReshapeVDSGenerator(
+            shape=SHAPE, path="./", files=["raw_0.h5"],
+            output="reshaped.h5", log_level=1,
+            alternate=(False, True, True)
+        )
+        gen.generate_vds()
+
+        test_dataset = np.array([0, 1, 3, 2, 7, 6, 4, 5])
+
+        with h5.File("reshaped.h5", mode="r") as h5_file:
+            vds_dataset = h5_file["data"]
+
+            print("Verifying dataset...")
+            np.testing.assert_array_equal(
+                test_dataset,
+                vds_dataset[:, :, :, 0, 0].flatten()
+            )
+
+    def test_reshape_3d_horrible(self):
+        FRAMES = 60
+        SHAPE = (3, 5, 4)
+        # Generate a single file with 100 2048x1536 frames
+        print("Creating raw files...")
+        generate_raw_files("raw", FRAMES, 1, 1, 2048, 1536)
+        print("Creating VDS...")
+        gen = ReshapeVDSGenerator(
+            shape=SHAPE, path="./", files=["raw_0.h5"],
+            output="reshaped.h5", log_level=1,
+            alternate=(False, True, True)
+        )
+        gen.generate_vds()
+
+        test_dataset = np.array([0,  1,  2,  3,   # . +--------> x
+                                 7,  6,  5,  4,   # . |
+                                 8,  9,  10, 11,  # . |
+                                 15, 14, 13, 12,  # . v
+                                 16, 17, 18, 19,  # . y  . |
+                                                  # .    . v
+                                 39, 38, 37, 36,  # .    . z
+                                 32, 33, 34, 35,
+                                 31, 30, 29, 28,
+                                 24, 25, 26, 27,
+                                 23, 22, 21, 20,
+
+                                 40, 41, 42, 43,
+                                 47, 46, 45, 44,
+                                 48, 49, 50, 51,
+                                 55, 54, 53, 52,
+                                 56, 57, 58, 59,
+                                 ])
+
+        with h5.File("reshaped.h5", mode="r") as h5_file:
+            vds_dataset = h5_file["data"]
+
+            print("Verifying dataset...")
+            np.testing.assert_array_equal(
+                test_dataset,
+                vds_dataset[:, :, :, 0, 0].flatten()
             )
 
     def test_reshape_empty(self):
