@@ -23,7 +23,7 @@ setup(
     include_package_data=True,
     test_suite='nose.collector',
     install_requires=[
-        'h5py==2.9.0'
+        'h5py>=3.0.0'
     ],
     tests_require=[
         'pytest',

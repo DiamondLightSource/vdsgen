@@ -1,7 +1,6 @@
 """A class for generating virtual dataset frames from sub-frames."""
 
-from .vds import VirtualSource, VirtualLayout, h5slice
-
+import h5py as h5
 from .vdsgenerator import VDSGenerator, SourceMeta
 
 
@@ -95,11 +94,11 @@ class GapFillVDSGenerator(VDSGenerator):
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", target_shape)
 
-        v_layout = VirtualLayout(target_shape, source_meta.dtype)
+        v_layout = h5.VirtualLayout(target_shape, source_meta.dtype)
 
         source_shape = source_meta.frames + \
             (source_meta.height, source_meta.width)
-        v_source = VirtualSource(
+        v_source = h5.VirtualSource(
             self.source_file, name=self.source_node,
             shape=source_shape, dtype=source_meta.dtype
         )

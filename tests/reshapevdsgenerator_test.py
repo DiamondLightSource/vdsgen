@@ -81,8 +81,8 @@ class SimpleFunctionsTest(unittest.TestCase):
 
     file_mock = MagicMock()
 
-    @patch(vdsgen_patch_path + '.VirtualSource')
-    @patch(vdsgen_patch_path + '.VirtualLayout')
+    @patch(h5py_patch_path + '.VirtualSource')
+    @patch(h5py_patch_path + '.VirtualLayout')
     def test_create_virtual_layout(self, layout_mock, source_mock):
         gen = ReshapeVDSGeneratorTester(
             output_file="/test/path/vds.hdf5",
@@ -103,8 +103,8 @@ class SimpleFunctionsTest(unittest.TestCase):
             "raw.h5", dtype="uint16", name="data", shape=(150, 256, 2048)
         )
 
-    @patch(vdsgen_patch_path + '.VirtualSource')
-    @patch(vdsgen_patch_path + '.VirtualLayout')
+    @patch(h5py_patch_path + '.VirtualSource')
+    @patch(h5py_patch_path + '.VirtualLayout')
     @patch(Reshape_patch_path + ".create_alternating_virtual_layout")
     def test_create_virtual_layout_calls_alternating(self, alt_mock,
                                                      layout_mock, source_mock):

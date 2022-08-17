@@ -2,7 +2,7 @@
 
 import logging
 
-from .vds import VirtualLayout, VirtualSource, h5slice
+import h5py as h5
 from .vdsgenerator import VDSGenerator, SourceMeta
 
 
@@ -82,11 +82,11 @@ class ReshapeVDSGenerator(VDSGenerator):
         vds_shape = self.dimensions + (source_meta.height, source_meta.width)
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", vds_shape)
-        v_layout = VirtualLayout(vds_shape, source_meta.dtype)
+        v_layout = h5.VirtualLayout(vds_shape, source_meta.dtype)
 
         source_shape = source_meta.frames + \
             (source_meta.height, source_meta.width)
-        v_source = VirtualSource(
+        v_source = h5.VirtualSource(
             self.source_file, name=self.source_node,
             shape=source_shape, dtype=source_meta.dtype
         )

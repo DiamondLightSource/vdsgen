@@ -1,6 +1,6 @@
 """A class for generating virtual dataset frames from sub-frames."""
 
-from .vds import VirtualSource, VirtualLayout, h5slice
+import h5py as h5
 from .vdsgenerator import VDSGenerator, SourceMeta
 
 
@@ -93,13 +93,13 @@ class InterleaveVDSGenerator(VDSGenerator):
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", target_shape)
 
-        v_layout = VirtualLayout(target_shape, source_meta.dtype)
+        v_layout = h5.VirtualLayout(target_shape, source_meta.dtype)
 
         total_files = len(self.files)
         for file_idx, file_path in enumerate(self.files):
             source_shape = (source_meta.frames[file_idx],) + \
                 (source_meta.height, source_meta.width)
-            v_source = VirtualSource(
+            v_source = h5.VirtualSource(
                 file_path,
                 name=self.source_node, shape=source_shape, dtype=source_meta.dtype
             )
@@ -115,7 +115,7 @@ class InterleaveVDSGenerator(VDSGenerator):
             if spare_frames != 0:
                 source_end -= spare_frames
 
-            v_layout[h5slice(start, count, stride, block), :, :] = \
+            v_layout[h5.MultiBlockSlice(start, stride, count, block), :, :] = \
                 v_source[:source_end, :, :]
 
             self.logger.debug(

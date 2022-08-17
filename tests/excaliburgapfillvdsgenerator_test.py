@@ -73,8 +73,8 @@ class SimpleFunctionsTest(unittest.TestCase):
            '.ExcaliburGapFillVDSGenerator.construct_vds_spacing',
            return_value=([3, 3, 3, 3, 3, 3, 3, 0], [3, 123, 3, 123, 3, 0]))
     @patch(h5py_patch_path + '.File', return_value=file_mock)
-    @patch(gapfill_vdsgen_patch_path + '.VirtualSource')
-    @patch(gapfill_vdsgen_patch_path + '.VirtualLayout')
+    @patch(h5py_patch_path + '.VirtualSource')
+    @patch(h5py_patch_path + '.VirtualLayout')
     def test_create_virtual_layout(self, layout_mock, source_mock, file_mock,
                                    construct_mock):
         gen = ExcaliburGapFillVDSGeneratorTester(
