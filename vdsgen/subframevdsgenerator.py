@@ -66,6 +66,8 @@ class SubFrameVDSGenerator(VDSGenerator):
         source = SourceMeta(frames=data['frames'], height=data['height'],
                             width=data['width'], dtype=data['dtype'])
 
+        assert None not in (source.height, source.width), "Can only handle 2D frames"
+
         self.logger.debug("Source metadata retrieved:\n"
                           "  Frames: %s\n"
                           "  Height: %s\n"

@@ -43,22 +43,23 @@ class Timer(object):
         self.interval = str(int((self.end - self.start) * 1000)) + "ms"
 
 
-def time_read_frame(file_name, dataset="data", frame=(0,)):
-    selection = frame + (slice(None), slice(None))
+def time_read_frame(file_name, dataset="data", frame=0):
     with Timer() as t:
         with h5.File(file_name, mode="r") as h5_file:
-            dset = h5_file[dataset][selection]
-            # print(dset)
+            dset = h5_file[dataset][frame, ...]
+            print(dset)
     print("Frame {} open time: {}".format(frame, t.interval))
 
 
-def time_read_block(file_name, dataset="data", frame=(0,)):
-    selection = frame + (slice(None), slice(None))
+def time_read_frame_selection(
+    file_name, dataset="data", frame=0, frame_selection=(slice(0), slice(0))
+):
+    selection = (frame,) + frame_selection
     with Timer() as t:
         with h5.File(file_name, mode="r") as h5_file:
             dset = h5_file[dataset][selection]
-            # print(dset)
-    print("Frame {} open time: {}".format(frame, t.interval))
+            print(dset)
+    print("Frame {}[{}] open time: {}".format(frame, frame_selection, t.interval))
 
 
 def time_dataset_open(file_name, dataset="data"):
@@ -146,6 +147,27 @@ class SystemTest(TestCase):
         FRAMES = 10000
         WIDTH = 2048
         HEIGHT = 1536
+        print("Creating raw files...")
+        generate_raw_files("OD", FRAMES, 4, 10, WIDTH, HEIGHT, any=True)
+        print("Creating VDS...")
+        with Timer() as t:
+            gen = InterleaveVDSGenerator(
+                "./", files=["OD_{}.h5".format(idx) for idx in range(FILES)],
+                source=dict(shape=((FRAMES // FILES,) * FILES, HEIGHT, WIDTH),
+                            dtype="float32"),
+                block_size=10, log_level=1
+            )
+            gen.generate_vds()
+        print("Interleave {} frames - Time: {}".format(FRAMES, t.interval))
+
+        time_dataset_open("OD_vds.h5")
+        time_read_frame("OD_vds.h5")
+
+    def test_interleave_scalar_data(self):
+        FILES = 4
+        FRAMES = 10000
+        WIDTH = None
+        HEIGHT = None
         print("Creating raw files...")
         generate_raw_files("OD", FRAMES, 4, 10, WIDTH, HEIGHT, any=True)
         print("Creating VDS...")
@@ -314,12 +336,12 @@ class SystemTest(TestCase):
         print("Gap Fill {} frames - Time: {}".format(FRAMES, t.interval))
 
         for frame in range(0, FRAMES, FRAMES // 20):
-            time_read_frame("gaps.h5", frame=(frame,))
+            time_read_frame("gaps.h5", frame=frame)
 
     def test_reshape(self):
         FRAMES = 60
         SHAPE = (5, 4, 3)
-        # Generate a single file with 100 2048x1536 frames
+        # Generate a single file with 100 2048x1536 frames``
         print("Creating raw files...")
         generate_raw_files("raw", FRAMES, 1, 1, 2048, 1536)
         print("Creating VDS...")
@@ -330,6 +352,28 @@ class SystemTest(TestCase):
         gen.generate_vds()
 
         self._validate_reshape(FRAMES)
+
+    def test_reshape_scalar_data(self):
+        FRAMES = 60
+        SHAPE = (5, 4, 3)
+        # Generate a single file with 100 scalar values
+        print("Creating raw files...")
+        generate_raw_files("raw", FRAMES, 1, 1, None, None)
+        print("Creating VDS...")
+        gen = ReshapeVDSGenerator(
+            shape=SHAPE, path="./", prefix="raw_",
+            output="reshaped.h5", log_level=1
+        )
+        gen.generate_vds()
+
+        with h5.File("reshaped.h5", mode="r") as h5_file:
+            vds_dataset = h5_file["data"]
+
+            print("Verifying dataset...")
+            np.testing.assert_array_equal(
+                np.array(range(FRAMES)),
+                vds_dataset[:, :, :, ...].flatten()
+            )
 
     def test_reshape_2d_alternate(self):
         FRAMES = 12
@@ -569,7 +613,7 @@ class SystemTest(TestCase):
 
         time_dataset_open("OD_vds.h5")
         for frame in range(0, FRAMES, FRAMES // 20):
-            time_read_frame("OD_vds.h5", frame=(frame,))
+            time_read_frame("OD_vds.h5", frame=frame)
 
         print("Creating Gap Fill VDS...")
         with Timer() as t:
@@ -583,7 +627,7 @@ class SystemTest(TestCase):
 
         time_dataset_open("gaps.h5")
         for frame in range(0, FRAMES, FRAMES // 20):
-            time_read_frame("gaps.h5", frame=(frame,))
+            time_read_frame("gaps.h5", frame=frame)
 
         SHAPE = (50, 20, 10)
         print("Creating Reshape VDS...")
@@ -597,8 +641,7 @@ class SystemTest(TestCase):
 
         time_dataset_open("reshaped.h5")
         for frame in range(0, SHAPE[0], SHAPE[0] // 5):
-            time_read_frame("reshaped.h5", frame=(frame, 0, 0))
-        pass
+            time_read_frame_selection("reshaped.h5", frame=frame)
 
     def test_interleave_nest(self):
         FILES = 4

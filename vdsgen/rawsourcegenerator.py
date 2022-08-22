@@ -45,20 +45,25 @@ def generate_raw_files(prefix, frames, files, block_size, x_dim, y_dim,
             file_idx = 0
         values[file_idx].append(frame_idx)
 
+    frame_dims = tuple(dim for dim in (y_dim, x_dim) if dim is not None)
     for file_idx, file_values in enumerate(values):
         with h5py.File(prefix + "_{}.h5".format(file_idx), mode="w") as f:
-            f.create_dataset(dset,
-                             shape=(len(file_values), y_dim, x_dim),
-                             chunks=(1, y_dim, x_dim),
-                             dtype="int32")
+            f.create_dataset(
+                dset,
+                shape=(len(file_values),) + frame_dims,
+                chunks=(1,) + frame_dims,
+                dtype="int32"
+            )
             if not any:
                 for idx, value in enumerate(file_values):
-                    f[dset][idx] = np.full((y_dim, x_dim),
-                                           value, dtype="int32")
+                    f[dset][idx] = np.full(
+                        frame_dims, value, dtype="int32"
+                    )
             else:
                 chunk_size = min(100, frames)
-                chunk_data = np.full((chunk_size, y_dim, x_dim),
-                                     1, dtype="int32")
+                chunk_data = np.full(
+                    (chunk_size,) + frame_dims, 1, dtype="int32"
+                )
                 for chunk_idx in range(0, len(file_values), chunk_size):
                     start = chunk_idx * chunk_size
                     end = start + chunk_size

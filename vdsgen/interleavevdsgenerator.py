@@ -88,8 +88,12 @@ class InterleaveVDSGenerator(VDSGenerator):
 
         """
         total_frames = sum(source_meta.frames)
-        target_shape = (total_frames,) + \
-                       (source_meta.height, source_meta.width)
+
+        frame_dims = tuple(
+            dim for dim in (source_meta.height, source_meta.width) if dim is not None
+        )
+
+        target_shape = (total_frames,) + frame_dims
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", target_shape)
 
@@ -97,8 +101,7 @@ class InterleaveVDSGenerator(VDSGenerator):
 
         total_files = len(self.files)
         for file_idx, file_path in enumerate(self.files):
-            source_shape = (source_meta.frames[file_idx],) + \
-                (source_meta.height, source_meta.width)
+            source_shape = (source_meta.frames[file_idx],) + frame_dims
             v_source = h5.VirtualSource(
                 file_path,
                 name=self.source_node, shape=source_shape, dtype=source_meta.dtype
@@ -115,20 +118,27 @@ class InterleaveVDSGenerator(VDSGenerator):
             if spare_frames != 0:
                 source_end -= spare_frames
 
-            v_layout[h5.MultiBlockSlice(start, stride, count, block), :, :] = \
-                v_source[:source_end, :, :]
+            v_layout[
+                # Every Nth full frame
+                h5.MultiBlockSlice(start, stride, count, block),
+                ...,
+            ] = v_source[
+                # All full frames up to spare frames to be handled separately
+                :source_end,
+                ...,
+            ]
 
             self.logger.debug(
-                "Mapping %s[%s:%s:%s:%s, :, :] to %s[0:%s, ...]",
+                "Mapping %s[%s:%s:%s:%s, ...] to %s[0:%s, ...]",
                 self.name, start, count, stride, block,
                 file_path.split("/")[-1], source_end)
 
             if spare_frames != 0:
                 start = total_frames - spare_frames
-                v_layout[start:, :, :] = v_source[source_end:, :, :]
+                v_layout[start:, ...] = v_source[source_end:, ...]
 
                 self.logger.debug(
-                    "Mapping %s[%s:%s, :, :] to %s[%s:%s, ...]",
+                    "Mapping %s[%s:%s, ...] to %s[%s:%s, ...]",
                     self.name, start, total_frames,
                     file_path.split("/")[-1], source_end, dataset_frames)
 

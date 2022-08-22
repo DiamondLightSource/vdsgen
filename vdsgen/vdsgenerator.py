@@ -109,6 +109,8 @@ class VDSGenerator(object):
     def parse_shape(shape):
         """Split shape into height, width and frames.
 
+        `height` and `width` can be `None` for <2D data
+
         Args:
             shape(tuple): Shape of dataset
 
@@ -116,12 +118,17 @@ class VDSGenerator(object):
             frames, height, width
 
         """
-        # The last two elements of shape are the height and width of the image
-        height, width = shape[-2:]
-        # Everything before that is the frames for each axis
-        frames = shape[:-2]
+        if len(shape) == 1:
+            return shape, None, None
+        elif shape == 2:
+            return shape[:0], None, shape[1]
+        else:  # Assume 2D images with N outer dimensions
+            # The last two elements of shape are the height and width of the image
+            height, width = shape[-2:]
+            # Everything before that is the frames for each axis
+            frames = shape[:-2]
 
-        return frames, height, width
+            return frames, height, width
 
     def generate_vds(self):
         """Generate a virtual dataset."""

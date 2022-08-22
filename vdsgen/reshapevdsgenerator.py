@@ -79,13 +79,17 @@ class ReshapeVDSGenerator(VDSGenerator):
                     ", ".join(str(d) for d in self.dimensions),
                     self.product(self.dimensions))
             )
-        vds_shape = self.dimensions + (source_meta.height, source_meta.width)
+
+        frame_dims = tuple(
+            dim for dim in (source_meta.height, source_meta.width) if dim is not None
+        )
+
+        vds_shape = self.dimensions + frame_dims
         self.logger.debug("VDS metadata:\n"
                           "  Shape: %s\n", vds_shape)
         v_layout = h5.VirtualLayout(vds_shape, source_meta.dtype)
 
-        source_shape = source_meta.frames + \
-            (source_meta.height, source_meta.width)
+        source_shape = source_meta.frames + frame_dims
         v_source = h5.VirtualSource(
             self.source_file, name=self.source_node,
             shape=source_shape, dtype=source_meta.dtype
