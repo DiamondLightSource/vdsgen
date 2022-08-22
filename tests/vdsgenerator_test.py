@@ -135,12 +135,6 @@ class FindFilesTest(unittest.TestCase):
 
         self.assertEqual(expected_files, files)
 
-    @patch('os.listdir', return_value=["stripe_1.h5"])
-    def test_given_one_file_then_error(self, _):
-
-        with self.assertRaises(IOError):
-            self.gen.find_files()
-
     @patch('os.listdir', return_value=[])
     def test_given_no_files_then_error(self, _):
 

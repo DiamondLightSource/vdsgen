@@ -3,7 +3,6 @@
 import logging
 
 import h5py as h5
-
 from .vdsgenerator import VDSGenerator, SourceMeta
 
 
@@ -94,33 +93,31 @@ class ReshapeVDSGenerator(VDSGenerator):
 
         if self.alternate is not None:
             v_layout = self.create_alternating_virtual_layout(
-                vds_shape, v_source, v_layout)
+                v_source, v_layout
+            )
         else:
             v_layout[...] = v_source
 
         return v_layout
 
-    def create_alternating_virtual_layout(self, shape, v_source, v_layout):
-        radices = self.create_mixed_radix_set()
+    def create_alternating_virtual_layout(self, v_source, v_layout):
+        radices = self._create_mixed_radix_set()
 
-        # Iterate over total number of row hyperslabs to map to VDS
         for idx in range(self.product(self.dimensions)):
-            axis_indices = self.calculate_axis_indices(idx, radices, shape)
-            # Hyperslab: Single index for each inner axis,
-            #            Full extent of outermost axis,
-            #            Full slice for height and width
-            vds_hyperslab = tuple(axis_indices +
+            nd_indices = self._calculate_axis_indices(idx, radices)
+
+            vds_hyperslab = tuple(nd_indices +
                                   [self.FULL_SLICE, self.FULL_SLICE])
             v_layout[vds_hyperslab] = v_source[idx]
 
             self.logger.debug(
                 "Mapping %s[%s, ...] to %s[%d, ...].",
-                self.name, ", ".join(str(idx) for idx in axis_indices),
+                self.name, ", ".join(str(idx) for idx in nd_indices),
                 self.source_file.split("/")[-1], idx)
 
         return v_layout
 
-    def create_mixed_radix_set(self):
+    def _create_mixed_radix_set(self):
         # Create a mixed radix set mapping any 1D index to an ND index
         # The 1D index is a decimal number and the ND index is the equivalent
         # representation in the mixed radix numeral system derived from shape
@@ -148,29 +145,27 @@ class ReshapeVDSGenerator(VDSGenerator):
             product *= value
         return product
 
-    def calculate_axis_indices(self, frame_index, radices, shape):
-        """Calculate indices for each inner axis for this frame index.
+    def _calculate_axis_indices(self, index, radices):
+        """Calculate N-dimensional axes, taking account of alternting axes.
 
         Args:
-            frame_index(int): Frame index in overall dataset
+            index(int): 1D index to calcluate from
             radices(tuple): Mixed radix numeral definition
-            shape(tuple): Shape of dataset
 
         Returns:
-            list: Indices for each individual axis
+            list: ND Indices of each axis for 1D index
 
         """
+        remaining = index  # Take a copy to modify
         axis_indices = [0 for _ in self.dimensions]
         for idx, radix in enumerate(radices):
-            while frame_index >= radix:
-                frame_index -= radix
-                axis_indices[idx] += 1
+            axis_indices[idx], remaining = divmod(remaining, radix)
 
-        # Invert axis indices for axes that are alternating
+        # Invert axis indices for alternating axes, if the cycle is odd
         for axis in range(1, len(self.dimensions)):
-            if self.alternate[axis] and axis_indices[axis - 1] % 2 != 0:
-                # If this axis alternates direction and the parent axis index
-                # is odd, then invert this axis index
-                axis_indices[axis] = shape[axis] - 1 - axis_indices[axis]
+            axis_cycle = index // radices[axis - 1]
+            if self.alternate[axis] and axis_cycle % 2 != 0:
+                max_index = self.dimensions[axis] - 1
+                axis_indices[axis] = max_index - axis_indices[axis]
 
         return axis_indices

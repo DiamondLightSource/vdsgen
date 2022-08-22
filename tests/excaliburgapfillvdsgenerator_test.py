@@ -7,6 +7,7 @@ from vdsgen import vdsgenerator
 from vdsgen.excaliburgapfillvdsgenerator import ExcaliburGapFillVDSGenerator
 
 vdsgen_patch_path = "vdsgen.excaliburgapfillvdsgenerator"
+gapfill_vdsgen_patch_path = "vdsgen.gapfillvdsgenerator"
 GapFillVDSGenerator_patch_path = vdsgen_patch_path + ".GapFillVDSGenerator"
 h5py_patch_path = "h5py"
 

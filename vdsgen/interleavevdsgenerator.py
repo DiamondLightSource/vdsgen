@@ -1,7 +1,6 @@
 """A class for generating virtual dataset frames from sub-frames."""
 
 import h5py as h5
-
 from .vdsgenerator import VDSGenerator, SourceMeta
 
 
@@ -101,48 +100,36 @@ class InterleaveVDSGenerator(VDSGenerator):
             source_shape = (source_meta.frames[file_idx],) + \
                 (source_meta.height, source_meta.width)
             v_source = h5.VirtualSource(
-                file_path, name=self.source_node,
-                shape=source_shape, dtype=source_meta.dtype
+                file_path,
+                name=self.source_node, shape=source_shape, dtype=source_meta.dtype
             )
             dataset_frames = v_source.shape[0]
 
-            for frame_idx in range(0, dataset_frames, self.block_size):
+            start = file_idx * self.block_size
+            count = dataset_frames // self.block_size
+            stride = total_files * self.block_size
+            block = self.block_size
 
-                source_block_idx = frame_idx // self.block_size
-                target_block_idx = \
-                    file_idx + total_files * source_block_idx
+            source_end = dataset_frames
+            spare_frames = divmod(dataset_frames, self.block_size)[1]
+            if spare_frames != 0:
+                source_end -= spare_frames
 
-                # Make sure to only take as many frames as raw dataset has
-                # It is OK if this isn't a complete block if it is the last one
-                block_size = min(self.block_size, dataset_frames - frame_idx)
+            v_layout[h5.MultiBlockSlice(start, stride, count, block), :, :] = \
+                v_source[:source_end, :, :]
 
-                if block_size < self.block_size:
-                    self.logger.warning(
-                        "%s does not have integer number of blocks sized %s",
-                        file_path.split("/")[-1], self.block_size)
+            self.logger.debug(
+                "Mapping %s[%s:%s:%s:%s, :, :] to %s[0:%s, ...]",
+                self.name, start, count, stride, block,
+                file_path.split("/")[-1], source_end)
 
-                source_start = frame_idx
-                source_end = frame_idx + block_size
-                # Hyperslab: Frame[block_start_idx, block_end_idx + 1],
-                #            Full slice for height and width
-                source_hyperslab = v_source[source_start: source_end, :, :]
-
-                target_start = self.block_size * target_block_idx
-                if target_start + block_size > total_frames:
-                    raise RuntimeError(
-                        "Cannot map dataset %d of %d [%d frames] "
-                        "to vds [%d frames] with blocks sized %d" %
-                        (self.files.index(file_path) + 1, len(self.files),
-                         dataset_frames, total_frames, self.block_size))
-                target_end = target_start + block_size
-
-                # Hyperslab: Frame[block_start_idx, block_end_idx + 1],
-                #            Full slice for height and width
-                v_layout[target_start:target_end, :, :] = source_hyperslab
+            if spare_frames != 0:
+                start = total_frames - spare_frames
+                v_layout[start:, :, :] = v_source[source_end:, :, :]
 
                 self.logger.debug(
-                    "Mapping %s[%s:%s, :, :] to %s[%s:%s, :, :].",
-                    self.name, target_start, target_end,
-                    file_path.split("/")[-1], source_start, source_end)
+                    "Mapping %s[%s:%s, :, :] to %s[%s:%s, ...]",
+                    self.name, start, total_frames,
+                    file_path.split("/")[-1], source_end, dataset_frames)
 
         return v_layout

@@ -8,6 +8,7 @@ from vdsgen.reshapevdsgenerator import ReshapeVDSGenerator
 
 vdsgen_patch_path = "vdsgen.reshapevdsgenerator"
 VDSGenerator_patch_path = vdsgen_patch_path + ".VDSGenerator"
+Reshape_patch_path = vdsgen_patch_path + ".ReshapeVDSGenerator"
 h5py_patch_path = "h5py"
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "h5py"))
@@ -80,10 +81,9 @@ class SimpleFunctionsTest(unittest.TestCase):
 
     file_mock = MagicMock()
 
-    @patch(h5py_patch_path + '.File', return_value=file_mock)
     @patch(h5py_patch_path + '.VirtualSource')
     @patch(h5py_patch_path + '.VirtualLayout')
-    def test_create_virtual_layout(self, layout_mock, source_mock, file_mock):
+    def test_create_virtual_layout(self, layout_mock, source_mock):
         gen = ReshapeVDSGeneratorTester(
             output_file="/test/path/vds.hdf5",
             dimensions=(5, 3, 10), alternate=None, periods=[], radices=(30, 10),
@@ -96,11 +96,29 @@ class SimpleFunctionsTest(unittest.TestCase):
         vds_file_mock = self.file_mock.__enter__.return_value
         vds_file_mock.__getitem__.return_value = dataset_mock
 
-        layout = gen.create_virtual_layout(source)
+        gen.create_virtual_layout(source)
 
         layout_mock.assert_called_once_with((5, 3, 10, 256, 2048), "uint16")
         source_mock.assert_called_once_with(
             "raw.h5", dtype="uint16", name="data", shape=(150, 256, 2048)
+        )
+
+    @patch(h5py_patch_path + '.VirtualSource')
+    @patch(h5py_patch_path + '.VirtualLayout')
+    @patch(Reshape_patch_path + ".create_alternating_virtual_layout")
+    def test_create_virtual_layout_calls_alternating(self, alt_mock,
+                                                     layout_mock, source_mock):
+        gen = ReshapeVDSGeneratorTester(
+            dimensions=(5, 3, 10), alternate=(False, True),
+            source_node="data",
+            source_file="raw.h5")
+        source = vdsgenerator.SourceMeta(
+            frames=(150,), height=256, width=2048, dtype="uint16")
+
+        gen.create_virtual_layout(source)
+
+        alt_mock.assert_called_once_with(
+            source_mock.return_value, layout_mock.return_value
         )
 
     def test_create_virtual_layout_frame_mismatch(self):
@@ -114,3 +132,63 @@ class SimpleFunctionsTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             gen.create_virtual_layout(source)
+
+    @patch(Reshape_patch_path + "._calculate_axis_indices")
+    @patch(Reshape_patch_path + "._create_mixed_radix_set")
+    def test_create_alternating_virtual_layout(self, radix_mock, calculate_mock):
+        gen = ReshapeVDSGeneratorTester(
+            output_file="/test/path/vds.hdf5",
+            dimensions=(5, 3, 10), alternate=[False, True, True], radices=(30, 10),
+            target_node="full_frame", source_node="data",
+            source_file="raw.h5", name="vds.hdf5")
+
+        v_source_mock = MagicMock()
+        v_layout_mock = MagicMock()
+
+        gen.create_alternating_virtual_layout(v_source_mock, v_layout_mock)
+
+        radix_mock.assert_called_once_with()
+        for i in range(150):
+            # Need to ignore call().__add__() etc. calls
+            calculate_mock.assert_any_call(i, radix_mock.return_value)
+
+        v_source_mock.__getitem__.assert_has_calls(
+            [call(i) for i in range(150)]
+        )
+        v_layout_mock.__setitem__.assert_has_calls(
+            [call((), v_source_mock.__getitem__.return_value)] * 150
+        )
+
+    def test_create_mixed_radix_set(self):
+        gen = ReshapeVDSGeneratorTester(dimensions=(5, 3, 10))
+        expected_radix = (30, 10, 1)
+
+        radix = gen._create_mixed_radix_set()
+
+        self.assertEqual(expected_radix, radix)
+
+    def test_calculate_reshaped_indices(self):
+        gen = ReshapeVDSGeneratorTester(
+            dimensions=(5, 3, 10), alternate=(False, False, False)
+        )
+
+        expected_indices = [1, 1, 2]
+        indices = gen._calculate_axis_indices(42, (30, 10, 1))
+        self.assertEqual(expected_indices, indices)
+
+        expected_indices = [4, 1, 0]
+        indices = gen._calculate_axis_indices(130, (30, 10, 1))
+        self.assertEqual(expected_indices, indices)
+
+    def test_calculate_reshaped_indices_alternating(self):
+        gen = ReshapeVDSGeneratorTester(
+            dimensions=(5, 3, 10), alternate=(False, True, True)
+        )
+
+        expected_indices = [1, 1, 2]
+        indices = gen._calculate_axis_indices(42, (30, 10, 1))
+        self.assertEqual(expected_indices, indices)
+
+        expected_indices = [4, 1, 9]
+        indices = gen._calculate_axis_indices(130, (30, 10, 1))
+        self.assertEqual(expected_indices, indices)

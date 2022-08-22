@@ -1,7 +1,6 @@
 """A class for generating virtual dataset frames from sub-frames."""
 
 import h5py as h5
-
 from .vdsgenerator import VDSGenerator, SourceMeta
 
 
@@ -104,44 +103,49 @@ class GapFillVDSGenerator(VDSGenerator):
             shape=source_shape, dtype=source_meta.dtype
         )
 
-        y_current = 0
-        for row_idx in range(self.grid_y):
-            y_start = y_current
-            y_stop = y_start + self.sub_height
-            y_current = y_stop + y_spacing[row_idx]
+        map_frames = max(source_meta.frames[0] // 10, 1)
+        for map_idx, _ in enumerate(
+                range(0, source_meta.frames[0], map_frames)):
+            frame_start = map_idx * map_frames
+            frame_end = min(frame_start + map_frames, source_meta.frames[0])
+            y_current = 0
+            for row_idx in range(self.grid_y):
+                y_start = y_current
+                y_stop = y_start + self.sub_height
+                y_current = y_stop + y_spacing[row_idx]
 
-            source_y_start = self.sub_height * row_idx
-            source_y_end = source_y_start + self.sub_height
+                source_y_start = self.sub_height * row_idx
+                source_y_end = source_y_start + self.sub_height
 
-            x_current = 0
-            for column_idx in range(self.grid_x):
-                x_start = x_current
-                x_stop = x_start + self.sub_width
-                x_current = x_stop + x_spacing[column_idx]
+                x_current = 0
+                for column_idx in range(self.grid_x):
+                    x_start = x_current
+                    x_stop = x_start + self.sub_width
+                    x_current = x_stop + x_spacing[column_idx]
 
-                source_x_start = self.sub_width * column_idx
-                source_x_end = source_x_start + self.sub_width
+                    source_x_start = self.sub_width * column_idx
+                    source_x_end = source_x_start + self.sub_width
 
-                # Hyperslab: All frames,
-                #            Height bounds of chip,
-                #            Width bounds of chip
-                source_hyperslab = \
-                    v_source[
-                        :,
+                    # Hyperslab: All frames,
+                    #            Height bounds of chip,
+                    #            Width bounds of chip
+                    source_hyperslab = \
+                        v_source[
+                        frame_start:frame_end,
                         source_y_start:source_y_end,
                         source_x_start:source_x_end
-                    ]
+                        ]
 
-                # Hyperslab: All frames,
-                #            Height bounds of chip with cumulative gap offset,
-                #            Width bounds of chip with cumulative gap offset
-                v_layout[:, y_start:y_stop, x_start:x_stop] = source_hyperslab
+                    # Hyperslab: All frames,
+                    #            Height bounds of chip with cumulative gap offset,
+                    #            Width bounds of chip with cumulative gap offset
+                    v_layout[frame_start:frame_end, y_start:y_stop, x_start:x_stop] = source_hyperslab
 
-                self.logger.debug(
-                    "Mapping %s[:, %s:%s, %s:%s] to %s[:, %s:%s, %s:%s].",
-                    self.name,
-                    source_y_start, source_y_end, source_x_start, source_x_end,
-                    self.source_file.split("/")[-1],
-                    y_start, y_stop, x_start, x_stop)
+                    self.logger.debug(
+                        "Mapping %s[:, %s:%s, %s:%s] to %s[:, %s:%s, %s:%s].",
+                        self.name,
+                        source_y_start, source_y_end, source_x_start, source_x_end,
+                        self.source_file.split("/")[-1],
+                        y_start, y_stop, x_start, x_stop)
 
         return v_layout

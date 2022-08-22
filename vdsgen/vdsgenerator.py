@@ -161,9 +161,6 @@ class VDSGenerator(object):
             raise IOError("No files matching pattern found. Got path: {path}, "
                           "prefix: {prefix}".format(path=self.path,
                                                     prefix=self.prefix))
-        elif len(files) < 2:
-            raise IOError("Folder must contain more than one matching HDF5 "
-                          "file.")
         else:
             self.logger.debug("Found datasets:\n  %s",
                               ", ".join([f.split("/")[-1] for f in files]))
