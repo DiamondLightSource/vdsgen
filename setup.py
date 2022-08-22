@@ -26,7 +26,7 @@ setup(
         'h5py==2.9.0'
     ],
     tests_require=[
-        'nose',
+        'pytest',
         'mock'
     ],
     zip_safe=False,
