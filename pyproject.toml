@@ -1,0 +1,26 @@
+[project]
+name = "vdsgen"
+version = "0.5.2"
+description = "Creates virtual dataset HDF5 files"
+readme = "README.md"
+authors = [
+    { name = "Gary Yendell" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "h5py>=3.0.0",
+]
+
+[project.scripts]
+vdsgen = "vdsgen.app:main"
+
+[dependency-groups]
+dev = [
+    "coverage>=3.7.1",
+    "mock>=1.0.1",
+    "pytest",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.11,<0.13.0"]
+build-backend = "uv_build"
